@@ -68,7 +68,6 @@ Navigate to your project folder end execute:
 ```
 
 ## Troubleshooting
-
 The Dockerfile uses the auto populated ARG `TARGETARCH`.
 
 If errors are encountered during `docker build` please check this value is being set to either `amd64` or `arm64` in the build output.
@@ -76,3 +75,15 @@ If errors are encountered during `docker build` please check this value is being
 https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 
 https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
+
+## Multi CPU Architecture Builds
+The docker image can be built and tested for multiple platforms.
+
+Setup your docker environment using the instructions in the link below:
+
+https://docs.docker.com/desktop/multi-arch/
+
+Run the following command to create an image for the platforms linux/arm64 and linux/amd64.
+```shell
+docker buildx build --pull --force-rm --no-cache --tag gcp-devops --platform linux/arm64,linux/amd64 .
+```
