@@ -27,6 +27,8 @@ A suitable docker environment is needed to build and run the image:
 * Docker Desktop for macOS or Windows
 * Windows + WSL2 + Ubuntu VM + Docker CE 
 
+N.B. For M1 Macbooks please use the latest version of Docker Desktop v4.7.1 or later.
+
 ## Customising the image
 Amend the version ARGS to your requirements in the Dockerfile:
 
@@ -64,3 +66,13 @@ Navigate to your project folder end execute:
 ```shell
 ~/docker-start.sh
 ```
+
+## Troubleshooting
+
+The Dockerfile uses the auto populated ARG `TARGETARCH`.
+
+If errors are encountered during `docker build` please check this value is being set to either `amd64` or `arm64` in the build output.
+
+https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+
+https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
