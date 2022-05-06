@@ -1,5 +1,6 @@
 ARG GCLOUD_VERSION=383.0.1
 ARG PACKER_VERSION=1.8.0
+ARG TERRAFORM_DOCS_VERSION=0.16.0
 ARG TERRAGRUNT_VERSION=0.36.6
 ARG TFLINT_VERSION=0.35.0
 ARG TFSEC_VERSION=1.17.0
@@ -10,6 +11,7 @@ LABEL name=base-devops
 
 ARG PACKER_VERSION
 ARG TARGETARCH
+ARG TERRAFORM_DOCS_VERSION
 ARG TERRAGRUNT_VERSION
 ARG TFLINT_VERSION
 ARG TFSEC_VERSION
@@ -58,7 +60,7 @@ RUN \
   python3 -m pip install --upgrade ansible && \
   python3 -m pip install --upgrade ansible-lint[yamllint] && \
   python3 -m pip install --upgrade mkdocs-material && \
-  python3 -m pip install --upgrade paramiko && \
+  #python3 -m pip install --upgrade paramiko && \
   python3 -m pip install --upgrade pre-commit && \
   \
   # Ansible Configuration
@@ -73,7 +75,7 @@ RUN \
   # Customisations \
   useradd devops && \
   \
-   mkdir -p ${TF_PLUGIN_CACHE_DIR} && \
+  mkdir -p ${TF_PLUGIN_CACHE_DIR} && \
   . /tmp/10-zshrc.sh && \
   . /tmp/20-bashrc.sh && \
   \
@@ -103,6 +105,11 @@ RUN \
   chmod +x /tmp/terragrunt && \
   mv /tmp/terragrunt /usr/local/bin && \
   \
+  wget -qO /tmp/terraform-docs.tgz https://terraform-docs.io/dl/v${TERRAFORM_DOCS_VERSION}/terraform-docs-v${TERRAFORM_DOCS_VERSION}-linux-${TARGETARCH}.tar.gz && \
+  tar -xzf /tmp/terraform-docs.tgz -C /tmp/ && \
+  chmod +x /tmp/terraform-docs && \
+  mv /tmp/terraform-docs /usr/local/bin && \
+  \
   wget -qO /tmp/tflint.zip https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${TARGETARCH}.zip && \
   unzip -q /tmp/tflint.zip -d /tmp && \
   chmod +x /tmp/tflint && \
@@ -129,8 +136,8 @@ RUN \
   echo $SHELL && \
   kubectl version --client && \
   python3 --version && \
-  #python3.8 --version && \
   terraform version && \
+  terraform-docs version && \
   terragrunt -version && \
   tflint --version && \
   tfsec --version && \
@@ -148,12 +155,7 @@ FROM base AS gcp-devops
 LABEL name=gcp-devops
 
 ARG GCLOUD_VERSION
-ARG PACKER_VERSION
 ARG TARGETARCH
-ARG TERRAGRUNT_VERSION
-ARG TFLINT_VERSION
-ARG TFSEC_VERSION
-ARG PYTHON_VERSION
 
 SHELL ["/bin/bash", "-c"]
 RUN \
