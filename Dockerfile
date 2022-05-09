@@ -42,7 +42,7 @@ RUN \
     less \
     make \
     openssh-clients \
-    python3 \
+    python39 \
     sqlite-devel \
     tree \
     vim \
