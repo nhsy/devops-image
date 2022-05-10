@@ -40,6 +40,7 @@ RUN \
     findutils \
     gcc \
     git \
+    htop \
     jq \
     less \
     make \
