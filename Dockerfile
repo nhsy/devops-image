@@ -1,5 +1,6 @@
 ARG GCLOUD_VERSION=383.0.1
 ARG PACKER_VERSION=1.8.0
+ARG TERRAFORM_VERSION=1.1.9
 ARG TERRAFORM_DOCS_VERSION=0.16.0
 ARG TERRAGRUNT_VERSION=0.36.6
 ARG TFLINT_VERSION=0.35.0
@@ -11,6 +12,7 @@ LABEL name=base-devops
 
 ARG PACKER_VERSION
 ARG TARGETARCH
+ARG TERRAFORM_VERSION
 ARG TERRAFORM_DOCS_VERSION
 ARG TERRAGRUNT_VERSION
 ARG TFLINT_VERSION
@@ -32,17 +34,18 @@ RUN \
     && \
   \
   yum install -y \
-    # ansible \
     bash \
     bash-completion \
     curl \
     findutils \
+    gcc \
     git \
     jq \
     less \
     make \
     openssh-clients \
     python39 \
+    python39-devel \
     sqlite-devel \
     tree \
     vim \
@@ -55,12 +58,11 @@ RUN \
   # Update All Components
   yum update -y && \
   \
-  python3 -m pip install --upgrade -U pip  && \
-  python3 -m pip install --upgrade wheel  && \
+  python3 -m pip install --upgrade -U pip && \
+  python3 -m pip install --upgrade wheel && \
   python3 -m pip install --upgrade ansible && \
   python3 -m pip install --upgrade ansible-lint[yamllint] && \
   python3 -m pip install --upgrade mkdocs-material && \
-  #python3 -m pip install --upgrade paramiko && \
   python3 -m pip install --upgrade pre-commit && \
   \
   # Ansible Configuration
@@ -99,7 +101,11 @@ RUN \
   \
   # Install tfswitch and Install latest version of Terraform
   curl -sL https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh | bash && \
-  tfswitch --latest && \
+  #tfswitch --latest && \
+  \
+  wget -qO /tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
+  unzip -q /tmp/terraform.zip -d /tmp && \
+  mv /tmp/terraform /usr/local/bin && \
   \
   wget -qO /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_${TARGETARCH} && \
   chmod +x /tmp/terragrunt && \
