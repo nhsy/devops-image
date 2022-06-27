@@ -102,11 +102,11 @@ RUN \
   \
   # Install tfswitch and Install latest version of Terraform
   curl -sL https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh | bash && \
-  #tfswitch --latest && \
+  tfswitch --latest && \
   \
-  wget -qO /tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
-  unzip -q /tmp/terraform.zip -d /tmp && \
-  mv /tmp/terraform /usr/local/bin && \
+#  wget -qO /tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip && \
+#  unzip -q /tmp/terraform.zip -d /tmp && \
+#  mv /tmp/terraform /usr/local/bin && \
   \
   wget -qO /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_${TARGETARCH} && \
   chmod +x /tmp/terragrunt && \
