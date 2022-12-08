@@ -6,7 +6,7 @@ ARG TERRAGRUNT_VERSION=0.36.6
 ARG TFLINT_VERSION=0.35.0
 ARG TFSEC_VERSION=1.17.0
 
-FROM rockylinux:latest AS base
+FROM rockylinux:9.0 AS base
 
 LABEL name=base-devops
 
@@ -25,7 +25,7 @@ ENV TF_PLUGIN_CACHE_DIR=/opt/terraform/plugins-cache
 COPY scripts/*.sh /tmp/
 
 RUN \
-  set -x && \
+  set -xe && \
   echo TARGETARCH: ${TARGETARCH} && \
   # Install Packages via Yum
   yum install -y \
@@ -45,8 +45,8 @@ RUN \
     less \
     make \
     openssh-clients \
-    python39 \
-    python39-devel \
+    python3 \
+    python3-devel \
     sqlite-devel \
     tree \
     vim \
@@ -93,7 +93,7 @@ RUN \
   rm -rf ~/.wget-hsts
 
 RUN \
-  set -x && \
+  set -xe && \
   echo TARGETARCH: ${TARGETARCH} && \
   # Kubectl Configuration
   wget -qO /tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/${TARGETARCH}/kubectl && \
@@ -139,8 +139,8 @@ RUN \
   rm -rf ~/.wget-hsts && \
   \
   # Confirm Versions
-  ansible --version && \
   echo $SHELL && \
+  ansible --version && \
   kubectl version --client && \
   python3 --version && \
   terraform version && \
@@ -166,7 +166,7 @@ ARG TARGETARCH
 
 SHELL ["/bin/bash", "-c"]
 RUN \
-  set -x && \
+  set -xe && \
   # GCP / gcloud Configuration
   if   [ "$TARGETARCH" = "amd64" ]; then \
     wget -qO /tmp/google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz; \
