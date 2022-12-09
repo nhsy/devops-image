@@ -1,10 +1,10 @@
-ARG GCLOUD_VERSION=383.0.1
-ARG PACKER_VERSION=1.8.0
-ARG TERRAFORM_VERSION=1.1.9
+ARG GCLOUD_VERSION=411.0.0
+ARG PACKER_VERSION=1.8.4
+#ARG TERRAFORM_VERSION=1.1.9
 ARG TERRAFORM_DOCS_VERSION=0.16.0
-ARG TERRAGRUNT_VERSION=0.36.6
-ARG TFLINT_VERSION=0.35.0
-ARG TFSEC_VERSION=1.17.0
+ARG TERRAGRUNT_VERSION=0.42.3
+ARG TFLINT_VERSION=0.43.0
+ARG TFSEC_VERSION=1.28.1
 
 FROM rockylinux:9.0 AS base
 
@@ -100,7 +100,7 @@ RUN \
   chmod +x /tmp/kubectl && \
   mv /tmp/kubectl /usr/local/bin && \
   \
-  # Install tfswitch and Install latest version of Terraform
+  # Install tfswitch and latest version of Terraform
   curl -sL https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh | bash && \
   tfswitch --latest && \
   \
@@ -156,7 +156,6 @@ RUN \
 #;;                                                                            ;;
 #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 FROM base AS gcp-devops
 
 LABEL name=gcp-devops
@@ -178,8 +177,9 @@ RUN \
   gcloud components install beta docker-credential-gcr --quiet && \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
-  rm -rf /usr/lib/google-cloud-sdk/.install/.backup && \
-  rm -rf /tmp/google-cloud-sdk.tar.gz && \
+  \
+  # Confirm Versions
+  gcloud --version && \
   \
   # Cleanup
   rm -rf /tmp/* && \
@@ -187,8 +187,8 @@ RUN \
   find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
   rm -rf /root/.cache/pip/* && \
   rm -rf ~/.wget-hsts && \
-  # Confirm Versions
-  gcloud --version
+  rm -rf /usr/lib/google-cloud-sdk/.install/.backup && \
+  rm -rf /tmp/google-cloud-sdk.tar.gz
 
 ENTRYPOINT ["/bin/zsh"]
 WORKDIR /work
