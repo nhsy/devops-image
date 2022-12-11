@@ -178,6 +178,9 @@ RUN \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
   \
+  # Confirm Versions
+  gcloud --version && \
+  \
   # Cleanup
   rm -rf /tmp/* && \
   rm -rf /var/tmp/* && \
@@ -185,9 +188,7 @@ RUN \
   rm -rf /root/.cache/pip/* && \
   rm -rf ~/.wget-hsts && \
   rm -rf /usr/lib/google-cloud-sdk/.install/.backup && \
-  rm -rf /tmp/google-cloud-sdk.tar.gz && \
-  # Confirm Versions
-  gcloud --version
+  rm -rf /tmp/google-cloud-sdk.tar.gz
 
 ENTRYPOINT ["/bin/zsh"]
 WORKDIR /work
