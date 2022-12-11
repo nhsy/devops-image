@@ -1,0 +1,59 @@
+version: "1.0"
+
+stages:
+  - "clone"
+  - "build"
+  - "test"
+  - "push"
+
+steps:
+  clone:
+    title: "Cloning repository"
+    type: "git-clone"
+    repo: "${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}"
+    revision: "${{CF_BRANCH}}"
+    git: "github"
+    stage: "clone"
+
+  build:
+    title: "Building Docker image"
+    type: "build"
+    image_name: "${{CF_REPO_NAME}}"
+    working_directory: "${{clone}}"
+    tag: "${{CF_BRANCH_TAG_NORMALIZED}}"
+    dockerfile: "Dockerfile"
+    disable_push: true
+    buildkit: true
+    stage: "build"
+    
+  test:
+    title: "Running tests"
+    type: "freestyle" # Run any command
+    image: "${{build}}" # The image in which command will be executed
+    working_directory: "${{clone}}" # Running command where code cloned
+    commands:
+      - |-
+        echo $SHELL
+        ansible --version
+        kubectl version --client
+        python3 --version
+        terraform version
+        terraform-docs version
+        terragrunt -version
+        tflint --version
+        tfsec --version
+        packer version
+        gcloud version
+    stage: "test"
+
+  push:
+    type: push
+    title: "Pushing Docker Image"
+    candidate: ${{build}}
+    tag: latest
+    image_name: "${{DOCKER_USERNAME}}/${{CF_REPO_NAME}}"
+    stage: "push"
+    when:
+      branch:
+        only:
+          - main
