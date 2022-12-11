@@ -25,7 +25,7 @@ ENV TF_PLUGIN_CACHE_DIR=/opt/terraform/plugins-cache
 COPY scripts/*.sh /tmp/
 
 RUN \
-  set -xe && \
+  set -x && \
   echo TARGETARCH: ${TARGETARCH} && \
   # Install Packages via Yum
   yum install -y \
@@ -93,7 +93,7 @@ RUN \
   rm -rf ~/.wget-hsts
 
 RUN \
-  set -xe && \
+  set -x && \
   echo TARGETARCH: ${TARGETARCH} && \
   # Kubectl Configuration
   wget -qO /tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/${TARGETARCH}/kubectl && \
@@ -165,8 +165,8 @@ ARG TARGETARCH
 
 SHELL ["/bin/bash", "-c"]
 RUN \
-  set -xe && \
-  # GCP / gcloud Configuration
+  set -x && \
+  # google-cloud-sdk install and configuration
   if   [ "$TARGETARCH" = "amd64" ]; then \
     wget -qO /tmp/google-cloud-sdk.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz; \
   elif [ "$TARGETARCH" = "arm64" ]; then \
