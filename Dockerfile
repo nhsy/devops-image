@@ -141,7 +141,7 @@ RUN \
   # Confirm Versions
   echo $SHELL && \
   ansible --version && \
-  kubectl version --client && \
+  kubectl version --short && \
   python3 --version && \
   terraform version && \
   terraform-docs version && \
