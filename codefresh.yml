@@ -32,18 +32,7 @@ steps:
     image: "${{build}}" # The image in which command will be executed
     working_directory: "${{clone}}" # Running command where code cloned
     commands:
-      - |-
-        echo $SHELL
-        ansible --version
-        kubectl version --client
-        python3 --version
-        terraform version
-        terraform-docs version
-        terragrunt -version
-        tflint --version
-        tfsec --version
-        packer version
-        gcloud version
+      - ./scripts/unit-tests.sh
     stage: "test"
 
   push:
