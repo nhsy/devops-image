@@ -136,19 +136,7 @@ RUN \
   rm -rf /var/tmp/* && \
   rm -rf /root/.cache/pip/* && \
   find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
-  rm -rf ~/.wget-hsts && \
-  \
-  # Confirm Versions
-  echo $SHELL && \
-  ansible --version && \
-  kubectl version --client && \
-  python3 --version && \
-  terraform version && \
-  terraform-docs version && \
-  terragrunt -version && \
-  tflint --version && \
-  tfsec --version && \
-  packer version
+  rm -rf ~/.wget-hsts
 
 #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #;;                                                                            ;;
@@ -177,9 +165,6 @@ RUN \
   gcloud components install beta docker-credential-gcr --quiet && \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
-  \
-  # Confirm Versions
-  gcloud --version && \
   \
   # Cleanup
   rm -rf /tmp/* && \
