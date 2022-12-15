@@ -1,0 +1,27 @@
+version: '2.1'
+orbs:
+  docker: circleci/docker@2.2.0
+
+jobs:
+  build-docker-image:
+    executor: docker/docker
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - docker/build:
+          image: $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+          use-buildkit: true
+
+  test-docker-image:
+    docker:
+      - image: $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
+    steps:
+      - run: |
+          terraform version
+
+workflows:
+  commit:
+    jobs:
+      - build-docker-image
+      #- test-docker-image
