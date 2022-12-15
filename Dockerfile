@@ -6,7 +6,7 @@ ARG TERRAGRUNT_VERSION=0.42.3
 ARG TFLINT_VERSION=0.43.0
 ARG TFSEC_VERSION=1.28.1
 
-FROM rockylinux:9.0 AS base
+FROM rockylinux:9 AS base
 
 LABEL name=base-devops
 
