@@ -33,7 +33,7 @@ RUN \
     epel-release \
     && \
   \
-  yum install -y \
+  yum install -y --allowerasing \
     bash \
     bash-completion \
     curl \
