@@ -45,6 +45,7 @@ RUN \
     less \
     make \
     openssh-clients \
+    procps-ng \
     python3 \
     python3-devel \
     sqlite-devel \
