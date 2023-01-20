@@ -1,8 +1,8 @@
-ARG GCLOUD_VERSION=411.0.0
+ARG GCLOUD_VERSION=414.0.0
 ARG PACKER_VERSION=1.8.4
 #ARG TERRAFORM_VERSION=1.1.9
 ARG TERRAFORM_DOCS_VERSION=0.16.0
-ARG TERRAGRUNT_VERSION=0.42.3
+ARG TERRAGRUNT_VERSION=0.42.8
 ARG TFLINT_VERSION=0.43.0
 ARG TFSEC_VERSION=1.28.1
 
@@ -33,7 +33,7 @@ RUN \
     epel-release \
     && \
   \
-  yum install -y \
+  yum install -y --allowerasing \
     bash \
     bash-completion \
     curl \
@@ -45,6 +45,7 @@ RUN \
     less \
     make \
     openssh-clients \
+    procps-ng \
     python3 \
     python3-devel \
     sqlite-devel \
@@ -131,6 +132,8 @@ RUN \
   chmod +x /tmp/packer && \
   mv /tmp/packer /usr/local/bin && \
   \
+  . ./tmp/unit-tests.sh && \
+  \
   # Cleanup
   rm -rf /tmp/* && \
   rm -rf /var/tmp/* && \
@@ -162,7 +165,7 @@ RUN \
   fi && \
   tar -zxvf /tmp/google-cloud-sdk.tar.gz -C /usr/lib/ && \
   /usr/lib/google-cloud-sdk/install.sh --rc-path=/root/.zshrc --command-completion=true --path-update=true --quiet && \
-  gcloud components install beta docker-credential-gcr --quiet && \
+  gcloud components install beta docker-credential-gcr gke-gcloud-auth-plugin --quiet && \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
   \
