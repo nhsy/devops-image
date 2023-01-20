@@ -131,6 +131,8 @@ RUN \
   chmod +x /tmp/packer && \
   mv /tmp/packer /usr/local/bin && \
   \
+  ./scripts/unit-tests.sh && \
+  \
   # Cleanup
   rm -rf /tmp/* && \
   rm -rf /var/tmp/* && \
@@ -162,7 +164,7 @@ RUN \
   fi && \
   tar -zxvf /tmp/google-cloud-sdk.tar.gz -C /usr/lib/ && \
   /usr/lib/google-cloud-sdk/install.sh --rc-path=/root/.zshrc --command-completion=true --path-update=true --quiet && \
-  gcloud components install beta docker-credential-gcr --quiet && \
+  gcloud components install beta docker-credential-gcr gke-gcloud-auth-plugin --quiet && \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
   \

@@ -9,4 +9,3 @@ terragrunt -version
 tflint --version
 tfsec --version
 packer version
-gcloud version
