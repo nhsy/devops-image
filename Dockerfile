@@ -22,7 +22,7 @@ ENV CLOUDSDK_PYTHON=python3
 ENV PATH /usr/lib/google-cloud-sdk/bin:$PATH
 ENV TF_PLUGIN_CACHE_DIR=/opt/terraform/plugins-cache
 
-COPY scripts/*.sh /tmp/
+COPY --chmod=755 scripts/*.sh /tmp/
 
 RUN \
   set -x && \
@@ -80,14 +80,14 @@ RUN \
   useradd devops && \
   \
   mkdir -p ${TF_PLUGIN_CACHE_DIR} && \
-  . /tmp/10-zshrc.sh && \
-  . /tmp/20-bashrc.sh && \
+  /tmp/10-zshrc.sh && \
+  /tmp/20-bashrc.sh && \
   \
   # Cleanup \
   yum clean packages && \
   yum clean metadata && \
   yum clean all && \
-  rm -rf /tmp/* && \
+  echo rm -rf /tmp/* && \
   rm -rf /var/tmp/* && \
   find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
   rm -rf /root/.cache/pip/* && \
@@ -132,7 +132,7 @@ RUN \
   chmod +x /tmp/packer && \
   mv /tmp/packer /usr/local/bin && \
   \
-  . ./tmp/unit-tests.sh && \
+  /tmp/30-unit-tests.sh && \
   \
   # Cleanup
   rm -rf /tmp/* && \
@@ -168,6 +168,7 @@ RUN \
   gcloud components install beta docker-credential-gcr gke-gcloud-auth-plugin --quiet && \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
+  gcloud version && \
   \
   # Cleanup
   rm -rf /tmp/* && \

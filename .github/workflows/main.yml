@@ -3,7 +3,7 @@ name: Docker Build and Push
 on:
   push:
     branches: [ "main" ]
-  pull_request:
+  workflow_dispatch:
   #schedule:
   #  - cron: '04 04 * * 0'
 
