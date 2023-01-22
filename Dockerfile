@@ -1,8 +1,8 @@
-ARG GCLOUD_VERSION=411.0.0
+ARG GCLOUD_VERSION=414.0.0
 ARG PACKER_VERSION=1.8.4
 #ARG TERRAFORM_VERSION=1.1.9
 ARG TERRAFORM_DOCS_VERSION=0.16.0
-ARG TERRAGRUNT_VERSION=0.42.3
+ARG TERRAGRUNT_VERSION=0.42.8
 ARG TFLINT_VERSION=0.43.0
 ARG TFSEC_VERSION=1.28.1
 
@@ -132,7 +132,7 @@ RUN \
   chmod +x /tmp/packer && \
   mv /tmp/packer /usr/local/bin && \
   \
-  ./scripts/unit-tests.sh && \
+  . ./tmp/unit-tests.sh && \
   \
   # Cleanup
   rm -rf /tmp/* && \
