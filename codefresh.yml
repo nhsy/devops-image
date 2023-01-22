@@ -32,7 +32,7 @@ steps:
     image: "${{build}}" # The image in which command will be executed
     working_directory: "${{clone}}" # Running command where code cloned
     commands:
-      - ./scripts/unit-tests.sh
+      - ./scripts/30-unit-tests.sh
     stage: "test"
 
   push:
