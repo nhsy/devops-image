@@ -1,5 +1,5 @@
 # GCP DevOps Image
-[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/skylawn/default%2Fgcp-devops-image?type=cf-1&key=eyJhbGciOiJIUzI1NiJ9.NjM5MzE1OThkNGRkNWU3ZTk1YTEyZGVj.jSpaGZ1Ljghy0wNH0vg_pDq79pUfhH6STUb62CVnmXQ)]( https://g.codefresh.io/pipelines/edit/new/builds?id=6395c04dd4a90952b4a38865&pipeline=gcp-devops-image&projects=default&projectId=639318813c97f0ff35421ee3)
+[![Build and Push](https://github.com/nhsy/gcp-devops-image/actions/workflows/main.yml/badge.svg)](https://github.com/nhsy/gcp-devops-image/actions/workflows/main.yml)
 
 ## Introduction
 The aim of this container image is to provide a baseline devops environment for usage across multiple projects.
