@@ -1,12 +1,11 @@
-name: Docker Image CI
+name: Docker Build and Push
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
-  schedule:
-    - cron: '04 04 * * 0'
+  #schedule:
+  #  - cron: '04 04 * * 0'
 
 jobs:
 
@@ -33,5 +32,5 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: true
+          push: false
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest      
