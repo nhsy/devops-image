@@ -4,8 +4,8 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-  #schedule:
-  #  - cron: '04 04 * * 0'
+  schedule:
+    - cron: '04 04 * * 0'
 
 jobs:
 
@@ -31,4 +31,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest      
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
