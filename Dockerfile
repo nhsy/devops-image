@@ -181,3 +181,56 @@ RUN \
 
 ENTRYPOINT ["/bin/zsh"]
 WORKDIR /work
+
+#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#;;                                                                            ;;
+#;;              ----==| A W S   D E V O P S   I M A G E |==----               ;;
+#;;                                                                            ;;
+#;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FROM base AS aws-devops
+
+LABEL name=aws-devops
+
+ARG TARGETARCH
+
+SHELL ["/bin/bash", "-c"]
+RUN \
+  set -x && \
+  \
+  # AWS Python Requirements
+  python3 -m pip install --upgrade --no-cache-dir -U crcmod && \
+  python3 -m pip install --upgrade pytest && \
+  python3 -m pip install --upgrade s3cmd && \
+  python3 -m pip install --upgrade boto3 && \
+  python3 -m pip install --upgrade cfn-lint && \
+  python3 -m pip install --upgrade requests && \
+  python3 -m pip install --upgrade bs4 && \
+  python3 -m pip install --upgrade lxml && \
+  \
+  # AWS Configuration
+  if [ "$TARGETARCH" = "amd64" ]; then \
+    wget -qO /tmp/awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip ; \
+  elif [ "$TARGETARCH" = "arm64" ]; then \
+    wget -qO /tmp/awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip ; \
+  fi && \
+  unzip -d /tmp /tmp/awscliv2.zip && \
+  /tmp/aws/install && \
+  \
+  # AWS Session Manager Plugin Installation \
+  if [ "$TARGETARCH" = "amd64" ]; then \
+    yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm ; \
+  elif [ "$TARGETARCH" = "arm64" ]; then \
+    yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_arm64/session-manager-plugin.rpm ; \
+  fi && \
+  \
+  aws --version && \
+  # Cleanup
+  rm -rf /tmp/* && \
+  rm -rf /var/tmp/* && \
+  find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
+  rm -rf /root/.cache/pip/* && \
+  rm -rf ~/.wget-hsts
+
+ENTRYPOINT ["/bin/zsh"]
+WORKDIR /work
