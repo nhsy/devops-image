@@ -25,7 +25,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build and push
+      - name: Build and push - gcp-devops
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -34,3 +34,15 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          target: gcp-devops
+
+      - name: Build and push - aws-devops
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/aws-devops-image:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: aws-devops
