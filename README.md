@@ -1,5 +1,5 @@
-# GCP DevOps Image
-[![Build and Push](https://github.com/nhsy/gcp-devops-image/actions/workflows/main.yml/badge.svg)](https://github.com/nhsy/gcp-devops-image/actions/workflows/main.yml)
+# DevOps Image
+[![Build and Push](https://github.com/nhsy/devops-image/actions/workflows/main.yml/badge.svg)](https://github.com/nhsy/gcp-devops-image/actions/workflows/main.yml)
 
 ## Introduction
 The aim of this container image is to provide a baseline devops environment for usage across multiple projects.
