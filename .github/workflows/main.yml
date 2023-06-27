@@ -33,8 +33,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest
           cache-from: type=gha
@@ -45,10 +44,15 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/aws-devops-image:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: aws-devops
+
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
