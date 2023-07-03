@@ -1,9 +1,9 @@
-.PHONY: all full
+.PHONY: all aws gcp
 
-all:
-	# docker buildx build --pull --force-rm --no-cache --tag gcp-devops --load .
-	docker build --tag gcp-devops .
-
-full:
-	docker build --pull --force-rm --no-cache --tag gcp-devops .
+all: aws gcp
 	
+aws:
+	docker build --pull --force-rm --no-cache --tag aws-devops --target aws-devops .
+
+gcp:
+	docker build --pull --force-rm --no-cache --tag gcp-devops --target gcp-devops .
