@@ -42,7 +42,14 @@ ARG TFSEC_VERSION=1.17.0
 ```
 
 ## Building the image
-docker build --pull --force-rm --no-cache --tag gcp-devops .
+```bash
+docker build --pull --force-rm --no-cache --tag aws-devops --target aws-devops .
+```
+or
+
+```bash
+docker build --pull --force-rm --no-cache --tag gcp-devops --target gcp-devops .
+```
 
 ## Using the image
 Create a shell script in your $HOME folder named `docker-start.sh` with the contents:
@@ -76,15 +83,3 @@ If errors are encountered during `docker build` please check this value is being
 https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 
 https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-
-## Multi CPU Architecture Builds
-The docker image can be built and tested for multiple platforms.
-
-Setup your docker environment using the instructions in the link below:
-
-https://docs.docker.com/desktop/multi-arch/
-
-Run the following command to create an image for the platforms linux/arm64 and linux/amd64.
-```shell
-docker buildx build --pull --force-rm --no-cache --tag gcp-devops --platform linux/arm64,linux/amd64 .
-```
