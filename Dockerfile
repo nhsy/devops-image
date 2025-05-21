@@ -1,10 +1,10 @@
-ARG GCLOUD_VERSION=437.0.1
-ARG PACKER_VERSION=1.9.1
-ARG TERRAFORM_VERSION=1.5.2
-ARG TERRAFORM_DOCS_VERSION=0.16.0
-ARG TERRAGRUNT_VERSION=0.48.0
-ARG TFLINT_VERSION=0.47.0
-ARG TFSEC_VERSION=1.28.1
+ARG GCLOUD_VERSION=523.0.0
+ARG PACKER_VERSION=1.12.0
+ARG TERRAFORM_VERSION=1.12.1
+ARG TERRAFORM_DOCS_VERSION=0.20.0
+ARG TERRAGRUNT_VERSION=v0.80.0
+ARG TFLINT_VERSION=v0.57.0
+ARG TFSEC_VERSION=v1.28.14
 
 FROM rockylinux:9 AS base
 
@@ -60,12 +60,12 @@ RUN \
   # Update All Components
   yum update -y && \
   \
-  python3 -m pip install --upgrade -U pip && \
-  python3 -m pip install --upgrade wheel && \
-  python3 -m pip install --upgrade ansible && \
-  python3 -m pip install --upgrade ansible-lint[yamllint] && \
-  python3 -m pip install --upgrade mkdocs-material && \
-  python3 -m pip install --upgrade pre-commit && \
+  python3 -m pip install --no-cache --upgrade -U pip && \
+  python3 -m pip install --no-cache --upgrade wheel && \
+  python3 -m pip install --no-cache --upgrade ansible && \
+  python3 -m pip install --no-cache --upgrade ansible-lint[yamllint] && \
+  python3 -m pip install --no-cache --upgrade mkdocs-material && \
+  python3 -m pip install --no-cache --upgrade pre-commit && \
   \
   # Ansible Configuration
   mkdir -p /etc/ansible/roles && \
@@ -79,7 +79,7 @@ RUN \
   # Customisations \
   useradd devops && \
   \
-  mkdir -p ${TF_PLUGIN_CACHE_DIR} && \
+  mkdir -p /opt/terraform/plugins-cache && \
   /tmp/10-zshrc.sh && \
   /tmp/20-bashrc.sh && \
   \
@@ -109,7 +109,7 @@ RUN \
   # unzip -q /tmp/terraform.zip -d /tmp && \
   # mv /tmp/terraform /usr/local/bin && \
   \
-  wget -qO /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_${TARGETARCH} && \
+  wget -qO /tmp/terragrunt https://github.com/gruntwork-io/terragrunt/releases/download/${TERRAGRUNT_VERSION}/terragrunt_linux_${TARGETARCH} && \
   chmod +x /tmp/terragrunt && \
   mv /tmp/terragrunt /usr/local/bin && \
   \
