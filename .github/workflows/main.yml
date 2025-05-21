@@ -10,7 +10,7 @@ on:
 jobs:
 
   build:
-
+    needs: test_dockerfile
     runs-on: ubuntu-latest
 
     steps:
@@ -56,3 +56,38 @@ jobs:
     #     platform:
     #       - linux/amd64
     #       - linux/arm64
+
+  test_dockerfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build base image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true # Load the image into the local Docker daemon
+          tags: base-image:latest
+          target: base
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run tests in container
+        run: |
+          docker run --rm base-image:latest sh -c " \
+            git --version && \
+            python3 --version && \
+            terraform version && \
+            kubectl version --client && \
+            packer --version && \
+            terragrunt --version && \
+            tflint --version && \
+            tfsec --version \
+          "
