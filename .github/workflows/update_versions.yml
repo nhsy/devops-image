@@ -293,12 +293,13 @@ jobs:
 
   build_and_test_image:
     needs: update_dockerfile_and_pr
+    if: ${{ needs.update_dockerfile_and_pr.outputs.pr_number != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ needs.update_dockerfile_and_pr.outputs.pull-request-number }}/head
+          ref: refs/pull/${{ needs.update_dockerfile_and_pr.outputs.pr_number  }}/head
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
