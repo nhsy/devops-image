@@ -295,8 +295,8 @@ jobs:
 
   build_and_test_image:
     needs: update_dockerfile_and_pr
+    if: ${{ success() && needs.update_dockerfile_and_pr.outputs.pull-request-number != '' }}
     runs-on: ubuntu-latest
-    if: ${{ needs.update_dockerfile_and_pr.outputs.pull-request-number != '' }}
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
