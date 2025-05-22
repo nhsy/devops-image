@@ -297,6 +297,8 @@ jobs:
   build_and_test_image:
     needs: update_dockerfile_and_pr
     if: ${{ needs.update_dockerfile_and_pr.outputs.pr_number != '' }}
+    outputs:
+      pr_number: ${{ needs.update_dockerfile_and_pr.outputs.pr_number }}  
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
@@ -349,7 +351,7 @@ jobs:
   auto_approve:
     needs: build_and_test_image
     runs-on: ubuntu-latest
-    if: ${{ success() && steps.update_dockerfile_and_pr.outputs.pr_number != '' }}
+    if: ${{ success() && needs.build_and_test_image.outputs.pr_number != '' }}
     permissions:
       pull-requests: write
     steps:
@@ -357,4 +359,4 @@ jobs:
         uses: hmarr/auto-approve-action@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.update_dockerfile_and_pr.outputs.pr_number }}
+          pull-request-number: ${{ needs.build_and_test_image.outputs.pr_number }}
