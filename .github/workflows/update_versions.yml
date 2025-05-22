@@ -348,15 +348,15 @@ jobs:
       #     docker run --rm base:test echo "Container started successfully"
 
 
-  auto_approve:
-    needs: build_and_test_image
-    runs-on: ubuntu-latest
-    if: ${{ success() && needs.build_and_test_image.outputs.pr_number != '' }}
-    permissions:
-      pull-requests: write
-    steps:
-      - name: Auto approve PR
-        uses: hmarr/auto-approve-action@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ needs.build_and_test_image.outputs.pr_number }}
+  # auto_approve:
+  #   needs: build_and_test_image
+  #   runs-on: ubuntu-latest
+  #   if: ${{ success() && needs.build_and_test_image.outputs.pr_number != '' }}
+  #   permissions:
+  #     pull-requests: write
+  #   steps:
+  #     - name: Auto approve PR
+  #       uses: hmarr/auto-approve-action@v4
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         pull-request-number: ${{ needs.build_and_test_image.outputs.pr_number }}
