@@ -303,19 +303,48 @@ jobs:
         with:
           ref: refs/pull/${{ needs.update_dockerfile_and_pr.outputs.pull-request-number }}/head
 
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
-      - name: Build Docker image
-        run: |
-          docker build -t devops-base-image:test .
+      - name: Build and push base
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: base:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: base
 
-      # Add your test steps here
-      - name: Run container smoke test
-        run: |
-          docker run --rm devops-base-image:test echo "Container started successfully"
+      - name: Build and push - gcp-devops
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: gcp-devops:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: gcp-devops
 
-      # Example: Add more tests as needed
+      - name: Build and push - aws-devops
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: aws-devops:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: aws-devops
+
+      # # Add your test steps here
+      # - name: Run container smoke test
+      #   run: |
+      #     docker run --rm base:test echo "Container started successfully"
+
 
   auto_approve:
     needs: build_and_test_image
