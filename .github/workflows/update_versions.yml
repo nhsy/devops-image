@@ -342,11 +342,18 @@ jobs:
           cache-to: type=gha,mode=max
           target: aws-devops
 
-      # # Add your test steps here
-      # - name: Run container smoke test
-      #   run: |
-      #     docker run --rm base:test echo "Container started successfully"
-
+      - name: Run tests in container
+        run: |
+          docker run --rm base:test sh -c " \
+            git --version && \
+            python3 --version && \
+            terraform version && \
+            kubectl version --client && \
+            packer --version && \
+            terragrunt --version && \
+            tflint --version && \
+            tfsec --version \
+          "      
 
   # auto_approve:
   #   needs: build_and_test_image
