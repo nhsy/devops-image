@@ -350,6 +350,8 @@ jobs:
     needs: build_and_test_image
     runs-on: ubuntu-latest
     if: ${{ success() &&  needs.update_dockerfile_and_pr.outputs.pr_number != '' }}
+    permissions:
+      pull-requests: write
     steps:
       - name: Auto approve PR
         uses: hmarr/auto-approve-action@v4
