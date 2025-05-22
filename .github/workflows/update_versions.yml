@@ -214,6 +214,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      pr_number: ${{ steps.cpr.outputs.pull-request-number }}      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -274,7 +276,7 @@ jobs:
           commit-message: |-
             Chore: Update software versions in Dockerfile
 
-            Automated update of software versions based on latest releases.
+            Automated update of software versions based on the latest releases.
           branch: "update-versions/auto-${{ github.run_id }}"
           delete-branch: true
           title: "Chore: Update software versions in Dockerfile"
@@ -299,7 +301,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ needs.update_dockerfile_and_pr.outputs.pr_number  }}/head
+          ref: refs/pull/${{ needs.update_dockerfile_and_pr.outputs.pr_number }}/head
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -346,10 +348,10 @@ jobs:
   auto_approve:
     needs: build_and_test_image
     runs-on: ubuntu-latest
-    if: ${{ success() && needs.update_dockerfile_and_pr.outputs.pull-request-number != '' }}
+    if: ${{ success() &&  needs.update_dockerfile_and_pr.outputs.pr_number != '' }}
     steps:
       - name: Auto approve PR
         uses: hmarr/auto-approve-action@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ needs.update_dockerfile_and_pr.outputs.pull-request-number }}
+          pull-request-number: ${{ needs.update_dockerfile_and_pr.outputs.pr_number }}
