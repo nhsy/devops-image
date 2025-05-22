@@ -281,13 +281,13 @@ jobs:
           body: |
             Automated weekly check found updated versions for the following tools:
 
-            ${{ needs.check_versions.outputs.GCLOUD_NEEDS_UPDATE == 'true' && format('- GCloud: {0} -> {1}', needs.check_versions.outputs.GCLOUD_VERSION_CURRENT, needs.check_versions.outputs.NEW_GCLOUD_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.PACKER_NEEDS_UPDATE == 'true' && format('- Packer: {0} -> {1}', needs.check_versions.outputs.PACKER_VERSION_CURRENT, needs.check_versions.outputs.NEW_PACKER_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TERRAFORM_NEEDS_UPDATE == 'true' && format('- Terraform: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TERRAFORM_DOCS_NEEDS_UPDATE == 'true' && format('- Terraform Docs: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_DOCS_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_DOCS_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TERRAGRUNT_NEEDS_UPDATE == 'true' && format('- Terragrunt: {0} -> {1}', needs.check_versions.outputs.TERRAGRUNT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAGRUNT_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TFLINT_NEEDS_UPDATE == 'true' && format('- TFLint: {0} -> {1}', needs.check_versions.outputs.TFLINT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFLINT_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TFSEC_NEEDS_UPDATE == 'true' && format('- TFSec: {0} -> {1}', needs.check_versions.outputs.TFSEC_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFSEC_VERSION) || '' }}
+            ${{ needs.check_versions.outputs.GCLOUD_NEEDS_UPDATE == 'true' && format('- GCloud: {0} -> {1}', needs.check_versions.outputs.GCLOUD_VERSION_CURRENT, needs.check_versions.outputs.NEW_GCLOUD_VERSION) }}
+            ${{ needs.check_versions.outputs.PACKER_NEEDS_UPDATE == 'true' && format('- Packer: {0} -> {1}', needs.check_versions.outputs.PACKER_VERSION_CURRENT, needs.check_versions.outputs.NEW_PACKER_VERSION) }}
+            ${{ needs.check_versions.outputs.TERRAFORM_NEEDS_UPDATE == 'true' && format('- Terraform: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_VERSION) }}
+            ${{ needs.check_versions.outputs.TERRAFORM_DOCS_NEEDS_UPDATE == 'true' && format('- Terraform Docs: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_DOCS_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_DOCS_VERSION) }}
+            ${{ needs.check_versions.outputs.TERRAGRUNT_NEEDS_UPDATE == 'true' && format('- Terragrunt: {0} -> {1}', needs.check_versions.outputs.TERRAGRUNT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAGRUNT_VERSION) }}
+            ${{ needs.check_versions.outputs.TFLINT_NEEDS_UPDATE == 'true' && format('- TFLint: {0} -> {1}', needs.check_versions.outputs.TFLINT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFLINT_VERSION) }}
+            ${{ needs.check_versions.outputs.TFSEC_NEEDS_UPDATE == 'true' && format('- TFSec: {0} -> {1}', needs.check_versions.outputs.TFSEC_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFSEC_VERSION) }}
 
             Please review and merge.
           labels: "dependencies, automated pr"
