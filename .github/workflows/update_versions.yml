@@ -4,7 +4,6 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  labels: write
 
 on:
   workflow_dispatch: # Allows manual triggering
