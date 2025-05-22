@@ -1,10 +1,5 @@
 name: Update Software Versions
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
 on:
   workflow_dispatch: # Allows manual triggering
   # schedule:
@@ -295,4 +290,3 @@ jobs:
             ${{ needs.check_versions.outputs.TFSEC_NEEDS_UPDATE == 'true' && format('- TFSec: {0} -> {1}', needs.check_versions.outputs.TFSEC_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFSEC_VERSION) }}
 
             Please review and merge.
-          labels: "dependencies, automated pr"
