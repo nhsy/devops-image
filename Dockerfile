@@ -12,6 +12,7 @@ ENV PATH=/usr/lib/google-cloud-sdk/bin:$AQUA_ROOT_DIR/bin:$PATH
 ENV TF_PLUGIN_CACHE_DIR=/opt/terraform/plugins-cache
 ENV AQUA_GLOBAL_CONFIG=/etc/aqua/aqua.yaml
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 COPY --chmod=755 scripts/*.sh /tmp/
 COPY aqua.yaml /etc/aqua/aqua.yaml
@@ -34,7 +35,6 @@ RUN \
   python3-venv \
   tree \
   vim \
-  wget \
   unzip \
   zip \
   zsh \
@@ -43,7 +43,7 @@ RUN \
   python3 -m pip install --no-cache-dir --break-system-packages --upgrade pre-commit && \
   \
   # Download, Install and Configure OhMyZsh
-  sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
   sed -i 's/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"candy\"/g' ~/.zshrc && \
   \
   # Install Aqua
@@ -71,11 +71,7 @@ RUN \
   rm -rf /var/tmp/* && \
   find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
   rm -rf /root/.cache/pip/* && \
-  rm -rf ~/.wget-hsts && \
-  \
-  # Final Verify Phase
-  echo "Final check of Aqua..." && \
-  ls -la /root/.local/share/aquaproj-aqua/bin/terraform
+  rm -rf ~/.wget-hsts
 
 
 
@@ -92,7 +88,7 @@ LABEL name=gcp-devops
 
 ARG TARGETARCH
 
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN \
   set -x && \
   # Install gcloud SDK via official APT repo
@@ -129,7 +125,7 @@ LABEL name=aws-devops
 
 ARG TARGETARCH
 
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN \
   set -x && \
   \
@@ -138,9 +134,9 @@ RUN \
   \
   # AWS CLI Installation
   if [ "$TARGETARCH" = "amd64" ]; then \
-  wget -qO /tmp/awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip ; \
+  curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip ; \
   elif [ "$TARGETARCH" = "arm64" ]; then \
-  wget -qO /tmp/awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip ; \
+  curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip -o /tmp/awscliv2.zip ; \
   fi && \
   unzip -d /tmp /tmp/awscliv2.zip && \
   /tmp/aws/install && \

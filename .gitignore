@@ -32,3 +32,4 @@ override.tf.json
 **/__pycache__/*
 # Don't Publish locally built mkdocs site directory
 site/
+.claude/

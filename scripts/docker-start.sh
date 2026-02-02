@@ -1,8 +1,11 @@
-NAME="$(basename $PWD)"-$RANDOM
+#!/bin/bash
+set -euo pipefail
 
-[ ! -d "$(pwd)/.config" ] && mkdir $(pwd)/.config
-[ ! -d "$(pwd)/.ssh" ] && mkdir $(pwd)/.ssh
-[ ! -f "$(pwd)/.terraformrc" ] && touch $(pwd)/.terraformrc
+NAME="$(basename "$PWD")"-$RANDOM
+
+[ ! -d "$(pwd)/.config" ] && mkdir "$(pwd)/.config"
+[ ! -d "$(pwd)/.ssh" ] && mkdir "$(pwd)/.ssh"
+[ ! -f "$(pwd)/.terraformrc" ] && touch "$(pwd)/.terraformrc"
 
 echo "Starting container - $NAME"
 docker run -ti --rm \
@@ -11,6 +14,6 @@ docker run -ti --rm \
     -v "$(pwd)"/.terraformrc:/root/.terraformrc \
     -v "$(pwd)":/work \
     -w /work \
-    --name $NAME \
+    --name "$NAME" \
     gcp-devops
 

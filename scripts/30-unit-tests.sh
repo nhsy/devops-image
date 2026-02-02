@@ -2,7 +2,6 @@
 set -e
 echo "Running Unit Tests..."
 echo "Shell: $SHELL"
-ansible --version
 kubectl version --client
 python3 --version
 terraform version

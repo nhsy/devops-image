@@ -35,7 +35,7 @@ jobs:
 
       - name: Run tests in container
         run: |
-          docker run --rm base-image:latest -c " \
+          docker run --rm base-image:latest sh -c " \
             git --version && \
             python3 --version && \
             terraform version && \
