@@ -63,7 +63,6 @@ RUN \
   \
   # Run Unit Tests during build to ensure tools are ready
   PATH=/root/.local/share/aquaproj-aqua/bin:$PATH /tmp/30-unit-tests.sh && \
-
   \
   # Cleanup
   apt-get clean && \
