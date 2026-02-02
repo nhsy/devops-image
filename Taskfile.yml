@@ -72,3 +72,18 @@ tasks:
     cmds:
       - docker rmi {{.GCP_IMAGE}} || true
       - docker rmi {{.AWS_IMAGE}} || true
+
+  clean:dockerhub:
+    desc: Purge Docker Hub images older than 30 days
+    dotenv: [.env]
+    usage: task clean:dockerhub -- <namespace> <repository> [days_old]
+    cmds:
+      - |
+        if [[ -z "${DOCKERHUB_USERNAME:-}" ]] || [[ -z "${DOCKERHUB_TOKEN:-}" ]]; then
+          echo "Error: Set DOCKERHUB_USERNAME and DOCKERHUB_TOKEN environment variables"
+          exit 1
+        fi
+        ./scripts/cleanup-docker-hub.sh {{.CLI_ARGS}}
+    requires:
+      vars:
+        - CLI_ARGS
