@@ -5,6 +5,10 @@ on:
   # schedule:
   #   - cron: '0 2 * * 1' # Runs every Monday at 02:00 UTC
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   check_versions:
     runs-on: ubuntu-latest
