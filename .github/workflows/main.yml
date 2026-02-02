@@ -58,6 +58,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate version tag
+        id: version
+        run: |
+          SHORT_SHA=${{ github.sha }}
+          SHORT_SHA=${SHORT_SHA:0:8}
+          echo "tag=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -76,7 +83,9 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:${{ steps.version.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: gcp-devops
@@ -87,7 +96,17 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/aws-devops-image:latest
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/aws-devops-image:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/aws-devops-image:${{ steps.version.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: aws-devops
+
+      - name: Cleanup old tags
+        if: success()
+        run: |
+          export DOCKERHUB_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
+          export DOCKERHUB_TOKEN="${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          ./scripts/cleanup-docker-hub.sh "${{ secrets.DOCKER_HUB_USERNAME }}" gcp-devops-image 5
+          ./scripts/cleanup-docker-hub.sh "${{ secrets.DOCKER_HUB_USERNAME }}" aws-devops-image 5
