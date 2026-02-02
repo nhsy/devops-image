@@ -56,14 +56,14 @@ jobs:
           echo "TFSEC_VERSION=$TFSEC_VERSION" >> $GITHUB_ENV
 
           # For job outputs, if needed by other jobs (not strictly necessary if all work is in this job)
-          echo "::set-output name=GCLOUD_VERSION::$GCLOUD_VERSION"
-          echo "::set-output name=PACKER_VERSION::$PACKER_VERSION"
-          echo "::set-output name=TERRAFORM_VERSION::$TERRAFORM_VERSION"
-          echo "::set-output name=TERRAFORM_DOCS_VERSION::$TERRAFORM_DOCS_VERSION"
-          echo "::set-output name=TERRAGRUNT_VERSION::$TERRAGRUNT_VERSION"
-          echo "::set-output name=TFLINT_VERSION::$TFLINT_VERSION"
-          echo "::set-output name=TFSEC_VERSION::$TFSEC_VERSION"
-          
+          echo "GCLOUD_VERSION=$GCLOUD_VERSION" >> $GITHUB_OUTPUT
+          echo "PACKER_VERSION=$PACKER_VERSION" >> $GITHUB_OUTPUT
+          echo "TERRAFORM_VERSION=$TERRAFORM_VERSION" >> $GITHUB_OUTPUT
+          echo "TERRAFORM_DOCS_VERSION=$TERRAFORM_DOCS_VERSION" >> $GITHUB_OUTPUT
+          echo "TERRAGRUNT_VERSION=$TERRAGRUNT_VERSION" >> $GITHUB_OUTPUT
+          echo "TFLINT_VERSION=$TFLINT_VERSION" >> $GITHUB_OUTPUT
+          echo "TFSEC_VERSION=$TFSEC_VERSION" >> $GITHUB_OUTPUT
+
           echo "Current GCloud version: $GCLOUD_VERSION"
           echo "Current Packer version: $PACKER_VERSION"
           echo "Current Terraform version: $TERRAFORM_VERSION"
@@ -125,44 +125,44 @@ jobs:
           echo "Current GCLOUD: $GCLOUD_VERSION, Latest GCLOUD: $LATEST_GCLOUD_VERSION"
           if [ "$GCLOUD_VERSION" != "$LATEST_GCLOUD_VERSION" ]; then
             echo "GCLOUD needs update: $LATEST_GCLOUD_VERSION"
-            echo "::set-output name=GCLOUD_NEEDS_UPDATE::true"
-            echo "::set-output name=NEW_GCLOUD_VERSION::$LATEST_GCLOUD_VERSION"
+            echo "GCLOUD_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
+            echo "NEW_GCLOUD_VERSION=$LATEST_GCLOUD_VERSION" >> $GITHUB_OUTPUT
             UPDATES_FOUND=true
           else
-            echo "::set-output name=GCLOUD_NEEDS_UPDATE::false"
+            echo "GCLOUD_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
           fi
 
           # PACKER
           echo "Current PACKER: $PACKER_VERSION, Latest PACKER: $LATEST_PACKER_VERSION"
           if [ "$PACKER_VERSION" != "$LATEST_PACKER_VERSION" ]; then
             echo "PACKER needs update: $LATEST_PACKER_VERSION"
-            echo "::set-output name=PACKER_NEEDS_UPDATE::true"
-            echo "::set-output name=NEW_PACKER_VERSION::$LATEST_PACKER_VERSION"
+            echo "PACKER_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
+            echo "NEW_PACKER_VERSION=$LATEST_PACKER_VERSION" >> $GITHUB_OUTPUT
             UPDATES_FOUND=true
           else
-            echo "::set-output name=PACKER_NEEDS_UPDATE::false"
+            echo "PACKER_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
           fi
 
           # TERRAFORM
           echo "Current TERRAFORM: $TERRAFORM_VERSION, Latest TERRAFORM: $LATEST_TERRAFORM_VERSION"
           if [ "$TERRAFORM_VERSION" != "$LATEST_TERRAFORM_VERSION" ]; then
             echo "TERRAFORM needs update: $LATEST_TERRAFORM_VERSION"
-            echo "::set-output name=TERRAFORM_NEEDS_UPDATE::true"
-            echo "::set-output name=NEW_TERRAFORM_VERSION::$LATEST_TERRAFORM_VERSION"
+            echo "TERRAFORM_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
+            echo "NEW_TERRAFORM_VERSION=$LATEST_TERRAFORM_VERSION" >> $GITHUB_OUTPUT
             UPDATES_FOUND=true
           else
-            echo "::set-output name=TERRAFORM_NEEDS_UPDATE::false"
+            echo "TERRAFORM_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
           fi
 
           # TERRAFORM_DOCS
           echo "Current TERRAFORM_DOCS: $TERRAFORM_DOCS_VERSION, Latest TERRAFORM_DOCS: $LATEST_TERRAFORM_DOCS_VERSION"
           if [ "$TERRAFORM_DOCS_VERSION" != "$LATEST_TERRAFORM_DOCS_VERSION" ]; then
             echo "TERRAFORM_DOCS needs update: $LATEST_TERRAFORM_DOCS_VERSION"
-            echo "::set-output name=TERRAFORM_DOCS_NEEDS_UPDATE::true"
-            echo "::set-output name=NEW_TERRAFORM_DOCS_VERSION::$LATEST_TERRAFORM_DOCS_VERSION"
+            echo "TERRAFORM_DOCS_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
+            echo "NEW_TERRAFORM_DOCS_VERSION=$LATEST_TERRAFORM_DOCS_VERSION" >> $GITHUB_OUTPUT
             UPDATES_FOUND=true
           else
-            echo "::set-output name=TERRAFORM_DOCS_NEEDS_UPDATE::false"
+            echo "TERRAFORM_DOCS_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
           fi
 
           # TERRAGRUNT - current version has 'v' prefix, latest might not after stripping
@@ -170,40 +170,40 @@ jobs:
           echo "Current TERRAGRUNT: $CURRENT_TERRAGRUNT_VERSION_NO_V, Latest TERRAGRUNT: $LATEST_TERRAGRUNT_VERSION"
           if [ "$CURRENT_TERRAGRUNT_VERSION_NO_V" != "$LATEST_TERRAGRUNT_VERSION" ]; then
             echo "TERRAGRUNT needs update: v$LATEST_TERRAGRUNT_VERSION" # Add 'v' back for the new version value
-            echo "::set-output name=TERRAGRUNT_NEEDS_UPDATE::true"
-            echo "::set-output name=NEW_TERRAGRUNT_VERSION::v$LATEST_TERRAGRUNT_VERSION" # Store with 'v'
+            echo "TERRAGRUNT_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
+            echo "NEW_TERRAGRUNT_VERSION=v$LATEST_TERRAGRUNT_VERSION" >> $GITHUB_OUTPUT # Store with 'v'
             UPDATES_FOUND=true
           else
-            echo "::set-output name=TERRAGRUNT_NEEDS_UPDATE::false"
+            echo "TERRAGRUNT_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
           fi
 
           # TFLINT
           echo "Current TFLINT: $TFLINT_VERSION, Latest TFLINT: $LATEST_TFLINT_VERSION"
           if [ "$TFLINT_VERSION" != "$LATEST_TFLINT_VERSION" ]; then
             echo "TFLINT needs update: $LATEST_TFLINT_VERSION"
-            echo "::set-output name=TFLINT_NEEDS_UPDATE::true"
-            echo "::set-output name=NEW_TFLINT_VERSION::$LATEST_TFLINT_VERSION"
+            echo "TFLINT_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
+            echo "NEW_TFLINT_VERSION=$LATEST_TFLINT_VERSION" >> $GITHUB_OUTPUT
             UPDATES_FOUND=true
           else
-            echo "::set-output name=TFLINT_NEEDS_UPDATE::false"
+            echo "TFLINT_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
           fi
 
           # TFSEC
           echo "Current TFSEC: $TFSEC_VERSION, Latest TFSEC: $LATEST_TFSEC_VERSION"
           if [ "$TFSEC_VERSION" != "$LATEST_TFSEC_VERSION" ]; then
             echo "TFSEC needs update: $LATEST_TFSEC_VERSION"
-            echo "::set-output name=TFSEC_NEEDS_UPDATE::true"
-            echo "::set-output name=NEW_TFSEC_VERSION::$LATEST_TFSEC_VERSION"
+            echo "TFSEC_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
+            echo "NEW_TFSEC_VERSION=$LATEST_TFSEC_VERSION" >> $GITHUB_OUTPUT
             UPDATES_FOUND=true
           else
-            echo "::set-output name=TFSEC_NEEDS_UPDATE::false"
+            echo "TFSEC_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
           fi
 
           if [ "$UPDATES_FOUND" = true ]; then
-            echo "::set-output name=updates_available::true"
+            echo "updates_available=true" >> $GITHUB_OUTPUT
             echo "Updates are available."
           else
-            echo "::set-output name=updates_available::false"
+            echo "updates_available=false" >> $GITHUB_OUTPUT
             echo "No updates found."
           fi
 
@@ -214,6 +214,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      pr_number: ${{ steps.cpr.outputs.pull-request-number }}      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -268,26 +270,100 @@ jobs:
           git diff Dockerfile
 
       - name: Create Pull Request
+        id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: |-
             Chore: Update software versions in Dockerfile
 
-            Automated update of software versions based on latest releases.
+            Automated update of software versions based on the latest releases.
           branch: "update-versions/auto-${{ github.run_id }}"
           delete-branch: true
           title: "Chore: Update software versions in Dockerfile"
           body: |
             Automated weekly check found updated versions for the following tools:
 
-            ${{ needs.check_versions.outputs.GCLOUD_NEEDS_UPDATE == 'true' && format('- GCloud: {0} -> {1}', needs.check_versions.outputs.GCLOUD_VERSION_CURRENT, needs.check_versions.outputs.NEW_GCLOUD_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.PACKER_NEEDS_UPDATE == 'true' && format('- Packer: {0} -> {1}', needs.check_versions.outputs.PACKER_VERSION_CURRENT, needs.check_versions.outputs.NEW_PACKER_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TERRAFORM_NEEDS_UPDATE == 'true' && format('- Terraform: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TERRAFORM_DOCS_NEEDS_UPDATE == 'true' && format('- Terraform Docs: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_DOCS_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_DOCS_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TERRAGRUNT_NEEDS_UPDATE == 'true' && format('- Terragrunt: {0} -> {1}', needs.check_versions.outputs.TERRAGRUNT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAGRUNT_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TFLINT_NEEDS_UPDATE == 'true' && format('- TFLint: {0} -> {1}', needs.check_versions.outputs.TFLINT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFLINT_VERSION) || '' }}
-            ${{ needs.check_versions.outputs.TFSEC_NEEDS_UPDATE == 'true' && format('- TFSec: {0} -> {1}', needs.check_versions.outputs.TFSEC_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFSEC_VERSION) || '' }}
+            ${{ needs.check_versions.outputs.GCLOUD_NEEDS_UPDATE == 'true' && format('- GCloud: {0} -> {1}', needs.check_versions.outputs.GCLOUD_VERSION_CURRENT, needs.check_versions.outputs.NEW_GCLOUD_VERSION) }}
+            ${{ needs.check_versions.outputs.PACKER_NEEDS_UPDATE == 'true' && format('- Packer: {0} -> {1}', needs.check_versions.outputs.PACKER_VERSION_CURRENT, needs.check_versions.outputs.NEW_PACKER_VERSION) }}
+            ${{ needs.check_versions.outputs.TERRAFORM_NEEDS_UPDATE == 'true' && format('- Terraform: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_VERSION) }}
+            ${{ needs.check_versions.outputs.TERRAFORM_DOCS_NEEDS_UPDATE == 'true' && format('- Terraform Docs: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_DOCS_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_DOCS_VERSION) }}
+            ${{ needs.check_versions.outputs.TERRAGRUNT_NEEDS_UPDATE == 'true' && format('- Terragrunt: {0} -> {1}', needs.check_versions.outputs.TERRAGRUNT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAGRUNT_VERSION) }}
+            ${{ needs.check_versions.outputs.TFLINT_NEEDS_UPDATE == 'true' && format('- TFLint: {0} -> {1}', needs.check_versions.outputs.TFLINT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFLINT_VERSION) }}
+            ${{ needs.check_versions.outputs.TFSEC_NEEDS_UPDATE == 'true' && format('- TFSec: {0} -> {1}', needs.check_versions.outputs.TFSEC_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFSEC_VERSION) }}
 
             Please review and merge.
-          labels: "dependencies, automated pr"
+
+  build_and_test_image:
+    needs: update_dockerfile_and_pr
+    if: ${{ needs.update_dockerfile_and_pr.outputs.pr_number != '' }}
+    outputs:
+      pr_number: ${{ needs.update_dockerfile_and_pr.outputs.pr_number }}  
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ needs.update_dockerfile_and_pr.outputs.pr_number }}/head
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push base
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: base:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: base
+
+      - name: Build and push - gcp-devops
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: gcp-devops:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: gcp-devops
+
+      - name: Build and push - aws-devops
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: aws-devops:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: aws-devops
+
+      - name: Run tests in container
+        run: |
+          docker run --rm base:test sh -c " \
+            git --version && \
+            python3 --version && \
+            terraform version && \
+            kubectl version --client && \
+            packer --version && \
+            terragrunt --version && \
+            tflint --version && \
+            tfsec --version \
+          "      
+
+  # auto_approve:
+  #   needs: build_and_test_image
+  #   runs-on: ubuntu-latest
+  #   if: ${{ success() && needs.build_and_test_image.outputs.pr_number != '' }}
+  #   permissions:
+  #     pull-requests: write
+  #   steps:
+  #     - name: Auto approve PR
+  #       uses: hmarr/auto-approve-action@v4
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         pull-request-number: ${{ needs.build_and_test_image.outputs.pr_number }}

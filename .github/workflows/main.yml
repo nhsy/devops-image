@@ -1,11 +1,11 @@
 name: Docker Build and Push
 
 on:
-  push:
-    branches: [ "main" ]
+  # push:
+    # branches: [ "main" ]
   workflow_dispatch:
-  schedule:
-    - cron: '04 04 * * 0'
+  # schedule:
+  #   - cron: '04 04 * * 0'
 
 jobs:
 
