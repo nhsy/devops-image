@@ -1,0 +1,69 @@
+version: '3'
+
+vars:
+  GCP_IMAGE: gcp-devops
+  AWS_IMAGE: aws-devops
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  build:gcp:
+    desc: Build GCP DevOps image
+    cmds:
+      - docker build --pull --force-rm --no-cache --tag {{.GCP_IMAGE}} --target gcp-devops .
+
+  build:aws:
+    desc: Build AWS DevOps image
+    cmds:
+      - docker build --pull --force-rm --no-cache --tag {{.AWS_IMAGE}} --target aws-devops .
+
+  build:all:
+    desc: Build all DevOps images
+    cmds:
+      - task: build:gcp
+      - task: build:aws
+
+  test:gcp:
+    desc: Test GCP DevOps image
+    cmds:
+      - |
+        docker run --rm {{.GCP_IMAGE}} -c " \
+          git --version && \
+          python3 --version && \
+          terraform version && \
+          kubectl version --client && \
+          packer --version && \
+          terragrunt --version && \
+          tflint --version && \
+          gcloud version \
+        "
+
+  test:aws:
+    desc: Test AWS DevOps image
+    cmds:
+      - |
+        docker run --rm {{.AWS_IMAGE}} -c " \
+          git --version && \
+          python3 --version && \
+          terraform version && \
+          kubectl version --client && \
+          packer --version && \
+          terragrunt --version && \
+          tflint --version && \
+          aws --version \
+        "
+
+  test:all:
+    desc: Test all DevOps images
+    cmds:
+      - task: test:gcp
+      - task: test:aws
+
+  clean:
+    desc: Remove built images
+    cmds:
+      - docker rmi {{.GCP_IMAGE}} || true
+      - docker rmi {{.AWS_IMAGE}} || true
