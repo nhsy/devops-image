@@ -1,5 +1,3 @@
-
-
 FROM ubuntu:24.04 AS base
 
 LABEL name=base-devops
@@ -15,12 +13,12 @@ ENV AQUA_GLOBAL_CONFIG=/etc/aqua/aqua.yaml
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 COPY --chmod=755 scripts/*.sh /tmp/
-COPY aqua.yaml /etc/aqua/aqua.yaml
 
-RUN \
+# Layer 1: APT packages (changes rarely)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
   set -x && \
   echo TARGETARCH: ${TARGETARCH} && \
-  # Update and install packages via APT
   apt-get update && \
   apt-get install -y --no-install-recommends \
   ca-certificates \
@@ -29,8 +27,6 @@ RUN \
   gnupg \
   htop \
   jq \
-  nodejs \
-  npm \
   openssh-client \
   procps \
   python3-pip \
@@ -39,60 +35,45 @@ RUN \
   vim \
   unzip \
   zip \
-  zsh \
-  && \
-  # Upgrade Node.js to 20+ for gemini-cli compatibility
-  npm install -g n@9.2.3 && n 20 && \
-  # Upgrade pip and install Python packages (consolidated)
-  python3 -m pip install --no-cache-dir --break-system-packages --upgrade pre-commit && \
-  \
-  # Download, Install and Configure OhMyZsh
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
-  sed -i 's/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"candy\"/g' ~/.zshrc && \
-  \
-  # Install Aqua
-  curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v3.0.1/aqua-installer | bash -s -- -v v2.31.0 && \
-  \
-  # Install tools via Aqua
+  zsh
+
+# Layer 2: Node.js 20 via NodeSource (changes rarely)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+  apt-get install -y --no-install-recommends nodejs
+
+# Layer 3: Python packages (changes occasionally)
+RUN --mount=type=cache,target=/root/.cache/pip \
+  python3 -m pip install --no-cache-dir --break-system-packages --upgrade pre-commit
+
+# Layer 4: Oh My Zsh (changes rarely)
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+  sed -i 's/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"candy\"/g' ~/.zshrc
+
+# Layer 5: Aqua + tools (changes with aqua.yaml)
+COPY aqua.yaml /etc/aqua/aqua.yaml
+RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v3.0.1/aqua-installer | bash -s -- -v v2.31.0 && \
   /root/.local/share/aquaproj-aqua/bin/aqua -c /etc/aqua/aqua.yaml i -a && \
-  \
-  # Verify installation immediately
-  test -f /root/.local/share/aquaproj-aqua/bin/terraform || (echo "Terraform not found after install!" && ls -R /root/.local && exit 1) && \
-  \
-  # Customisations
-  useradd -m devops && \
+  test -f /root/.local/share/aquaproj-aqua/bin/terraform || (echo "Terraform not found after install!" && ls -R /root/.local && exit 1)
+
+# Layer 6: Customizations + unit tests
+RUN useradd -m devops && \
   mkdir -p /opt/terraform/plugins-cache && \
   /tmp/10-zshrc.sh && \
   /tmp/20-bashrc.sh && \
-  \
-  # Run Unit Tests during build to ensure tools are ready
   PATH=/root/.local/share/aquaproj-aqua/bin:$PATH /tmp/30-unit-tests.sh && \
-  \
-  # Cleanup
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* && \
-  rm -rf /tmp/* && \
-  rm -rf /var/tmp/* && \
-  find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
-  rm -rf /root/.cache/pip/* && \
-  rm -rf ~/.wget-hsts
+  /tmp/cleanup.sh
 
-RUN \
-  # Install Claude Code as devops user (writes to /home/devops)
+# Layer 7: AI CLI tools (changes with version bumps)
+RUN --mount=type=cache,target=/root/.npm \
   su - devops -c 'curl -fsSL https://claude.ai/install.sh | bash' && \
-  \
-  # Install AI CLI tools via npm
   npm install -g \
     @openai/codex@latest \
     @github/copilot@latest \
     @google/gemini-cli@latest \
     && \
-  \
-  # Cleanup
-  npm cache clean --force && \
-  rm -rf /tmp/* /root/.npm/_cacache && \
-  \
-  # Confirm AI CLI Tool Versions \
+  /tmp/cleanup.sh && \
   /home/devops/.local/bin/claude --version && \
   codex --version && \
   copilot --version && \
@@ -111,26 +92,17 @@ LABEL name=gcp-devops
 ARG TARGETARCH
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
   set -x && \
-  # Install gcloud SDK via official APT repo
   curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
   echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee /etc/apt/sources.list.d/google-cloud-sdk.list && \
   apt-get update && \
   apt-get install -y --no-install-recommends google-cloud-cli google-cloud-cli-gke-gcloud-auth-plugin && \
-  \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
   gcloud version && \
-  \
-  # Cleanup
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* && \
-  rm -rf /tmp/* && \
-  rm -rf /var/tmp/* && \
-  find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
-  rm -rf /root/.cache/pip/* && \
-  rm -rf ~/.wget-hsts
+  /tmp/cleanup.sh
 
 USER devops
 WORKDIR /home/devops
@@ -150,13 +122,11 @@ LABEL name=aws-devops
 ARG TARGETARCH
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,target=/root/.cache/pip \
   set -x && \
-  \
-  # AWS Python Requirements
   python3 -m pip install --no-cache-dir --break-system-packages --upgrade boto3 cfn-lint requests && \
-  \
-  # AWS CLI Installation
   if [ "$TARGETARCH" = "amd64" ]; then \
   curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip ; \
   elif [ "$TARGETARCH" = "arm64" ]; then \
@@ -164,24 +134,14 @@ RUN \
   fi && \
   unzip -d /tmp /tmp/awscliv2.zip && \
   /tmp/aws/install && \
-  \
-  # AWS Session Manager Plugin Installation
   if [ "$TARGETARCH" = "amd64" ]; then \
   curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb -o /tmp/session-manager-plugin.deb ; \
   elif [ "$TARGETARCH" = "arm64" ]; then \
   curl -fsSL https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_arm64/session-manager-plugin.deb -o /tmp/session-manager-plugin.deb ; \
   fi && \
   dpkg -i /tmp/session-manager-plugin.deb && \
-  \
   aws --version && \
-  # Cleanup
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* && \
-  rm -rf /tmp/* && \
-  rm -rf /var/tmp/* && \
-  find / -regex ".*/__pycache__" -exec rm -rf '{}' \; || true && \
-  rm -rf /root/.cache/pip/* && \
-  rm -rf ~/.wget-hsts
+  /tmp/cleanup.sh
 
 USER devops
 WORKDIR /home/devops
