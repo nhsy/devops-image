@@ -12,7 +12,7 @@ ENV AQUA_GLOBAL_CONFIG=/etc/aqua/aqua.yaml
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-COPY --chmod=755 scripts/*.sh /tmp/
+COPY --chmod=755 scripts/*.sh /usr/local/bin/
 
 # Layer 1: APT packages (changes rarely)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -21,19 +21,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   echo TARGETARCH: ${TARGETARCH} && \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-  ca-certificates \
   curl \
   git \
   gnupg \
   htop \
   jq \
-  openssh-client \
-  procps \
   python3-pip \
   python3-venv \
   tree \
-  vim \
   unzip \
+  vim \
   zip \
   zsh
 
@@ -47,25 +44,23 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN --mount=type=cache,target=/root/.cache/pip \
   python3 -m pip install --no-cache-dir --break-system-packages --upgrade pre-commit
 
-# Layer 4: Oh My Zsh (changes rarely)
-RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
-  sed -i 's/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"candy\"/g' ~/.zshrc
-
-# Layer 5: Aqua + tools (changes with aqua.yaml)
+# Layer 4: Aqua + tools (changes with aqua.yaml)
 COPY aqua.yaml /etc/aqua/aqua.yaml
 RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v3.0.1/aqua-installer | bash -s -- -v v2.31.0 && \
   /root/.local/share/aquaproj-aqua/bin/aqua -c /etc/aqua/aqua.yaml i -a && \
   test -f /root/.local/share/aquaproj-aqua/bin/terraform || (echo "Terraform not found after install!" && ls -R /root/.local && exit 1)
 
-# Layer 6: Customizations + unit tests
+# Layer 5: Customizations + unit tests
 RUN useradd -m devops && \
   mkdir -p /opt/terraform/plugins-cache && \
-  /tmp/10-zshrc.sh && \
-  /tmp/20-bashrc.sh && \
-  PATH=/root/.local/share/aquaproj-aqua/bin:$PATH /tmp/30-unit-tests.sh && \
-  /tmp/cleanup.sh
+  /usr/local/bin/setup-zshrc.sh && \
+  /usr/local/bin/setup-bashrc.sh && \
+  su - devops -c "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"" && \
+  su - devops -c "/usr/local/bin/setup-zshrc.sh" && \
+  PATH=/root/.local/share/aquaproj-aqua/bin:$PATH /usr/local/bin/verify-installation.sh && \
+  /usr/local/bin/cleanup-build.sh
 
-# Layer 7: AI CLI tools (changes with version bumps)
+# Layer 6: AI CLI tools
 RUN --mount=type=cache,target=/root/.npm \
   su - devops -c 'curl -fsSL https://claude.ai/install.sh | bash' && \
   npm install -g \
@@ -73,7 +68,7 @@ RUN --mount=type=cache,target=/root/.npm \
     @github/copilot@latest \
     @google/gemini-cli@latest \
     && \
-  /tmp/cleanup.sh && \
+  /usr/local/bin/cleanup-build.sh && \
   /home/devops/.local/bin/claude --version && \
   codex --version && \
   copilot --version && \
@@ -102,7 +97,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   gcloud config set core/disable_usage_reporting true && \
   gcloud config set component_manager/disable_update_check true && \
   gcloud version && \
-  /tmp/cleanup.sh
+  /usr/local/bin/cleanup-build.sh
 
 USER devops
 WORKDIR /home/devops
@@ -141,7 +136,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   fi && \
   dpkg -i /tmp/session-manager-plugin.deb && \
   aws --version && \
-  /tmp/cleanup.sh
+  /usr/local/bin/cleanup-build.sh
 
 USER devops
 WORKDIR /home/devops
