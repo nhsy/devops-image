@@ -29,6 +29,8 @@ RUN \
   gnupg \
   htop \
   jq \
+  nodejs \
+  npm \
   openssh-client \
   procps \
   python3-pip \
@@ -39,6 +41,8 @@ RUN \
   zip \
   zsh \
   && \
+  # Upgrade Node.js to 20+ for gemini-cli compatibility
+  npm install -g n@9.2.3 && n 20 && \
   # Upgrade pip and install Python packages (consolidated)
   python3 -m pip install --no-cache-dir --break-system-packages --upgrade pre-commit && \
   \
@@ -73,8 +77,26 @@ RUN \
   rm -rf /root/.cache/pip/* && \
   rm -rf ~/.wget-hsts
 
-
-
+RUN \
+  # Install Claude Code as devops user (writes to /home/devops)
+  su - devops -c 'curl -fsSL https://claude.ai/install.sh | bash' && \
+  \
+  # Install AI CLI tools via npm
+  npm install -g \
+    @openai/codex@latest \
+    @github/copilot@latest \
+    @google/gemini-cli@latest \
+    && \
+  \
+  # Cleanup
+  npm cache clean --force && \
+  rm -rf /tmp/* /root/.npm/_cacache && \
+  \
+  # Confirm AI CLI Tool Versions \
+  /home/devops/.local/bin/claude --version && \
+  codex --version && \
+  copilot --version && \
+  gemini --version
 
 #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #;;                                                                            ;;
@@ -110,8 +132,10 @@ RUN \
   rm -rf /root/.cache/pip/* && \
   rm -rf ~/.wget-hsts
 
+USER devops
+WORKDIR /home/devops
+ENV PATH="/home/devops/bin:/home/devops/.local/bin:${PATH}"
 ENTRYPOINT ["/bin/zsh"]
-WORKDIR /work
 
 #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #;;                                                                            ;;
@@ -159,5 +183,7 @@ RUN \
   rm -rf /root/.cache/pip/* && \
   rm -rf ~/.wget-hsts
 
+USER devops
+WORKDIR /home/devops
+ENV PATH="/home/devops/bin:/home/devops/.local/bin:${PATH}"
 ENTRYPOINT ["/bin/zsh"]
-WORKDIR /work

@@ -24,13 +24,5 @@ alias kg='kubectl get \$*'
 alias kl='kubectl logs \$*'
 alias kr='kubectl run \$*'
 
-autoload bashcompinit && bashcompinit
-autoload -Uz compinit && compinit
-
-#[/usr/local/bin/aws_completer] && complete -C '/usr/local/bin/aws_completer' aws
-#[/usr/local/bin/aws_completer] && alias aws-ssm='aws ssm start-session --target $1'
-
-source <(kubectl completion zsh)
-
 EOF
 fi

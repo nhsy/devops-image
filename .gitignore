@@ -33,3 +33,4 @@ override.tf.json
 # Don't Publish locally built mkdocs site directory
 site/
 .claude/
+.env
