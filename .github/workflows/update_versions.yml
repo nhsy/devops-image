@@ -1,7 +1,7 @@
 name: Update Software Versions
 
 on:
-  workflow_dispatch: # Allows manual triggering
+  workflow_dispatch:
   # schedule:
   #   - cron: '0 2 * * 1' # Runs every Monday at 02:00 UTC
 
@@ -10,311 +10,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check_versions:
-    runs-on: ubuntu-latest
-    outputs:
-      updates_available: ${{ steps.compare_versions.outputs.updates_available }}
-      GCLOUD_NEEDS_UPDATE: ${{ steps.compare_versions.outputs.GCLOUD_NEEDS_UPDATE }}
-      NEW_GCLOUD_VERSION: ${{ steps.compare_versions.outputs.NEW_GCLOUD_VERSION }}
-      PACKER_NEEDS_UPDATE: ${{ steps.compare_versions.outputs.PACKER_NEEDS_UPDATE }}
-      NEW_PACKER_VERSION: ${{ steps.compare_versions.outputs.NEW_PACKER_VERSION }}
-      TERRAFORM_NEEDS_UPDATE: ${{ steps.compare_versions.outputs.TERRAFORM_NEEDS_UPDATE }}
-      NEW_TERRAFORM_VERSION: ${{ steps.compare_versions.outputs.NEW_TERRAFORM_VERSION }}
-      TERRAFORM_DOCS_NEEDS_UPDATE: ${{ steps.compare_versions.outputs.TERRAFORM_DOCS_NEEDS_UPDATE }}
-      NEW_TERRAFORM_DOCS_VERSION: ${{ steps.compare_versions.outputs.NEW_TERRAFORM_DOCS_VERSION }}
-      TERRAGRUNT_NEEDS_UPDATE: ${{ steps.compare_versions.outputs.TERRAGRUNT_NEEDS_UPDATE }}
-      NEW_TERRAGRUNT_VERSION: ${{ steps.compare_versions.outputs.NEW_TERRAGRUNT_VERSION }}
-      TFLINT_NEEDS_UPDATE: ${{ steps.compare_versions.outputs.TFLINT_NEEDS_UPDATE }}
-      NEW_TFLINT_VERSION: ${{ steps.compare_versions.outputs.NEW_TFLINT_VERSION }}
-      TFSEC_NEEDS_UPDATE: ${{ steps.compare_versions.outputs.TFSEC_NEEDS_UPDATE }}
-      NEW_TFSEC_VERSION: ${{ steps.compare_versions.outputs.NEW_TFSEC_VERSION }}
-      GCLOUD_VERSION_CURRENT: ${{ env.GCLOUD_VERSION }}
-      PACKER_VERSION_CURRENT: ${{ env.PACKER_VERSION }}
-      TERRAFORM_VERSION_CURRENT: ${{ env.TERRAFORM_VERSION }}
-      TERRAFORM_DOCS_VERSION_CURRENT: ${{ env.TERRAFORM_DOCS_VERSION }}
-      TERRAGRUNT_VERSION_CURRENT: ${{ env.TERRAGRUNT_VERSION }}
-      TFLINT_VERSION_CURRENT: ${{ env.TFLINT_VERSION }}
-      TFSEC_VERSION_CURRENT: ${{ env.TFSEC_VERSION }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Extract current software versions
-        id: extract_versions
-        run: |
-          echo "Extracting versions from Dockerfile..."
-          GCLOUD_VERSION=$(grep -oP '(?<=^ARG GCLOUD_VERSION=).*' Dockerfile)
-          PACKER_VERSION=$(grep -oP '(?<=^ARG PACKER_VERSION=).*' Dockerfile)
-          TERRAFORM_VERSION=$(grep -oP '(?<=^ARG TERRAFORM_VERSION=).*' Dockerfile)
-          TERRAFORM_DOCS_VERSION=$(grep -oP '(?<=^ARG TERRAFORM_DOCS_VERSION=).*' Dockerfile)
-          TERRAGRUNT_VERSION=$(grep -oP '(?<=^ARG TERRAGRUNT_VERSION=).*' Dockerfile)
-          TFLINT_VERSION=$(grep -oP '(?<=^ARG TFLINT_VERSION=).*' Dockerfile)
-          TFSEC_VERSION=$(grep -oP '(?<=^ARG TFSEC_VERSION=).*' Dockerfile)
-
-          echo "GCLOUD_VERSION=$GCLOUD_VERSION" >> $GITHUB_ENV
-          echo "PACKER_VERSION=$PACKER_VERSION" >> $GITHUB_ENV
-          echo "TERRAFORM_VERSION=$TERRAFORM_VERSION" >> $GITHUB_ENV
-          echo "TERRAFORM_DOCS_VERSION=$TERRAFORM_DOCS_VERSION" >> $GITHUB_ENV
-          echo "TERRAGRUNT_VERSION=$TERRAGRUNT_VERSION" >> $GITHUB_ENV
-          echo "TFLINT_VERSION=$TFLINT_VERSION" >> $GITHUB_ENV
-          echo "TFSEC_VERSION=$TFSEC_VERSION" >> $GITHUB_ENV
-
-          # For job outputs, if needed by other jobs (not strictly necessary if all work is in this job)
-          echo "GCLOUD_VERSION=$GCLOUD_VERSION" >> $GITHUB_OUTPUT
-          echo "PACKER_VERSION=$PACKER_VERSION" >> $GITHUB_OUTPUT
-          echo "TERRAFORM_VERSION=$TERRAFORM_VERSION" >> $GITHUB_OUTPUT
-          echo "TERRAFORM_DOCS_VERSION=$TERRAFORM_DOCS_VERSION" >> $GITHUB_OUTPUT
-          echo "TERRAGRUNT_VERSION=$TERRAGRUNT_VERSION" >> $GITHUB_OUTPUT
-          echo "TFLINT_VERSION=$TFLINT_VERSION" >> $GITHUB_OUTPUT
-          echo "TFSEC_VERSION=$TFSEC_VERSION" >> $GITHUB_OUTPUT
-
-          echo "Current GCloud version: $GCLOUD_VERSION"
-          echo "Current Packer version: $PACKER_VERSION"
-          echo "Current Terraform version: $TERRAFORM_VERSION"
-          echo "Current Terraform Docs version: $TERRAFORM_DOCS_VERSION"
-          echo "Current Terragrunt version: $TERRAGRUNT_VERSION"
-          echo "Current TFLint version: $TFLINT_VERSION"
-          echo "Current TFSec version: $TFSEC_VERSION"
-
-      - name: Fetch latest software versions
-        id: fetch_latest_versions
-        run: |
-          echo "Fetching latest Terraform version..."
-          LATEST_TERRAFORM_VERSION=$(curl -sL https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r '.current_version')
-          echo "LATEST_TERRAFORM_VERSION=$LATEST_TERRAFORM_VERSION" >> $GITHUB_ENV
-          echo "Latest Terraform version: $LATEST_TERRAFORM_VERSION"
-
-          echo "Fetching latest Packer version..."
-          LATEST_PACKER_TAG=$(curl -sL https://api.github.com/repos/hashicorp/packer/releases/latest | jq -r '.tag_name')
-          LATEST_PACKER_VERSION=${LATEST_PACKER_TAG#v}
-          echo "LATEST_PACKER_VERSION=$LATEST_PACKER_VERSION" >> $GITHUB_ENV
-          echo "Latest Packer version: $LATEST_PACKER_VERSION"
-
-          echo "Fetching latest Terraform Docs version..."
-          LATEST_TERRAFORM_DOCS_TAG=$(curl -sL https://api.github.com/repos/terraform-docs/terraform-docs/releases/latest | jq -r '.tag_name')
-          LATEST_TERRAFORM_DOCS_VERSION=${LATEST_TERRAFORM_DOCS_TAG#v}
-          echo "LATEST_TERRAFORM_DOCS_VERSION=$LATEST_TERRAFORM_DOCS_VERSION" >> $GITHUB_ENV
-          echo "Latest Terraform Docs version: $LATEST_TERRAFORM_DOCS_VERSION"
-
-          echo "Fetching latest Terragrunt version..."
-          LATEST_TERRAGRUNT_TAG=$(curl -sL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest | jq -r '.tag_name')
-          LATEST_TERRAGRUNT_VERSION=${LATEST_TERRAGRUNT_TAG#v}
-          echo "LATEST_TERRAGRUNT_VERSION=$LATEST_TERRAGRUNT_VERSION" >> $GITHUB_ENV
-          echo "Latest Terragrunt version: $LATEST_TERRAGRUNT_VERSION"
-
-          echo "Fetching latest TFLint version..."
-          LATEST_TFLINT_TAG=$(curl -sL https://api.github.com/repos/terraform-linters/tflint/releases/latest | jq -r '.tag_name')
-          LATEST_TFLINT_VERSION=${LATEST_TFLINT_TAG#v}
-          echo "LATEST_TFLINT_VERSION=$LATEST_TFLINT_VERSION" >> $GITHUB_ENV
-          echo "Latest TFLint version: $LATEST_TFLINT_VERSION"
-
-          echo "Fetching latest TFSec version..."
-          LATEST_TFSEC_TAG=$(curl -sL https://api.github.com/repos/aquasecurity/tfsec/releases/latest | jq -r '.tag_name')
-          LATEST_TFSEC_VERSION=${LATEST_TFSEC_TAG#v}
-          echo "LATEST_TFSEC_VERSION=$LATEST_TFSEC_VERSION" >> $GITHUB_ENV
-          echo "Latest TFSec version: $LATEST_TFSEC_VERSION"
-          
-          echo "Fetching latest GCloud version..."
-          LATEST_GCLOUD_VERSION=$(curl -s "https://registry.hub.docker.com/v2/repositories/google/cloud-sdk/tags/" | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
-          echo "LATEST_GCLOUD_VERSION=$LATEST_GCLOUD_VERSION" >> $GITHUB_ENV
-          echo "Latest GCloud version: $LATEST_GCLOUD_VERSION"
-
-      - name: Compare versions and set update flag
-        id: compare_versions
-        run: |
-          echo "Comparing versions..."
-          UPDATES_FOUND=false
-
-          # GCLOUD
-          echo "Current GCLOUD: $GCLOUD_VERSION, Latest GCLOUD: $LATEST_GCLOUD_VERSION"
-          if [ "$GCLOUD_VERSION" != "$LATEST_GCLOUD_VERSION" ]; then
-            echo "GCLOUD needs update: $LATEST_GCLOUD_VERSION"
-            echo "GCLOUD_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
-            echo "NEW_GCLOUD_VERSION=$LATEST_GCLOUD_VERSION" >> $GITHUB_OUTPUT
-            UPDATES_FOUND=true
-          else
-            echo "GCLOUD_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
-          fi
-
-          # PACKER
-          echo "Current PACKER: $PACKER_VERSION, Latest PACKER: $LATEST_PACKER_VERSION"
-          if [ "$PACKER_VERSION" != "$LATEST_PACKER_VERSION" ]; then
-            echo "PACKER needs update: $LATEST_PACKER_VERSION"
-            echo "PACKER_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
-            echo "NEW_PACKER_VERSION=$LATEST_PACKER_VERSION" >> $GITHUB_OUTPUT
-            UPDATES_FOUND=true
-          else
-            echo "PACKER_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
-          fi
-
-          # TERRAFORM
-          echo "Current TERRAFORM: $TERRAFORM_VERSION, Latest TERRAFORM: $LATEST_TERRAFORM_VERSION"
-          if [ "$TERRAFORM_VERSION" != "$LATEST_TERRAFORM_VERSION" ]; then
-            echo "TERRAFORM needs update: $LATEST_TERRAFORM_VERSION"
-            echo "TERRAFORM_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
-            echo "NEW_TERRAFORM_VERSION=$LATEST_TERRAFORM_VERSION" >> $GITHUB_OUTPUT
-            UPDATES_FOUND=true
-          else
-            echo "TERRAFORM_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
-          fi
-
-          # TERRAFORM_DOCS
-          echo "Current TERRAFORM_DOCS: $TERRAFORM_DOCS_VERSION, Latest TERRAFORM_DOCS: $LATEST_TERRAFORM_DOCS_VERSION"
-          if [ "$TERRAFORM_DOCS_VERSION" != "$LATEST_TERRAFORM_DOCS_VERSION" ]; then
-            echo "TERRAFORM_DOCS needs update: $LATEST_TERRAFORM_DOCS_VERSION"
-            echo "TERRAFORM_DOCS_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
-            echo "NEW_TERRAFORM_DOCS_VERSION=$LATEST_TERRAFORM_DOCS_VERSION" >> $GITHUB_OUTPUT
-            UPDATES_FOUND=true
-          else
-            echo "TERRAFORM_DOCS_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
-          fi
-
-          # TERRAGRUNT - current version has 'v' prefix, latest might not after stripping
-          CURRENT_TERRAGRUNT_VERSION_NO_V=${TERRAGRUNT_VERSION#v}
-          echo "Current TERRAGRUNT: $CURRENT_TERRAGRUNT_VERSION_NO_V, Latest TERRAGRUNT: $LATEST_TERRAGRUNT_VERSION"
-          if [ "$CURRENT_TERRAGRUNT_VERSION_NO_V" != "$LATEST_TERRAGRUNT_VERSION" ]; then
-            echo "TERRAGRUNT needs update: v$LATEST_TERRAGRUNT_VERSION" # Add 'v' back for the new version value
-            echo "TERRAGRUNT_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
-            echo "NEW_TERRAGRUNT_VERSION=v$LATEST_TERRAGRUNT_VERSION" >> $GITHUB_OUTPUT # Store with 'v'
-            UPDATES_FOUND=true
-          else
-            echo "TERRAGRUNT_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
-          fi
-
-          # TFLINT
-          echo "Current TFLINT: $TFLINT_VERSION, Latest TFLINT: $LATEST_TFLINT_VERSION"
-          if [ "$TFLINT_VERSION" != "$LATEST_TFLINT_VERSION" ]; then
-            echo "TFLINT needs update: $LATEST_TFLINT_VERSION"
-            echo "TFLINT_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
-            echo "NEW_TFLINT_VERSION=$LATEST_TFLINT_VERSION" >> $GITHUB_OUTPUT
-            UPDATES_FOUND=true
-          else
-            echo "TFLINT_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
-          fi
-
-          # TFSEC
-          echo "Current TFSEC: $TFSEC_VERSION, Latest TFSEC: $LATEST_TFSEC_VERSION"
-          if [ "$TFSEC_VERSION" != "$LATEST_TFSEC_VERSION" ]; then
-            echo "TFSEC needs update: $LATEST_TFSEC_VERSION"
-            echo "TFSEC_NEEDS_UPDATE=true" >> $GITHUB_OUTPUT
-            echo "NEW_TFSEC_VERSION=$LATEST_TFSEC_VERSION" >> $GITHUB_OUTPUT
-            UPDATES_FOUND=true
-          else
-            echo "TFSEC_NEEDS_UPDATE=false" >> $GITHUB_OUTPUT
-          fi
-
-          if [ "$UPDATES_FOUND" = true ]; then
-            echo "updates_available=true" >> $GITHUB_OUTPUT
-            echo "Updates are available."
-          else
-            echo "updates_available=false" >> $GITHUB_OUTPUT
-            echo "No updates found."
-          fi
-
-  update_dockerfile_and_pr:
-    needs: check_versions
-    if: needs.check_versions.outputs.updates_available == 'true'
+  update_and_pr:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     outputs:
-      pr_number: ${{ steps.cpr.outputs.pull-request-number }}      
+      pr_number: ${{ steps.cpr.outputs.pull-request-number }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: main # Or your default branch
 
-      - name: Configure Git
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
-      - name: Update Dockerfile ARG versions
-        run: |
-          echo "Updating Dockerfile..."
-          # GCLOUD
-          if [ "${{ needs.check_versions.outputs.GCLOUD_NEEDS_UPDATE }}" == "true" ]; then
-            echo "Updating GCLOUD version from ${{ needs.check_versions.outputs.GCLOUD_VERSION_CURRENT }} to ${{ needs.check_versions.outputs.NEW_GCLOUD_VERSION }}"
-            sed -i "s/^ARG GCLOUD_VERSION=.*/ARG GCLOUD_VERSION=${{ needs.check_versions.outputs.NEW_GCLOUD_VERSION }}/" Dockerfile
-          fi
-          # PACKER
-          if [ "${{ needs.check_versions.outputs.PACKER_NEEDS_UPDATE }}" == "true" ]; then
-            echo "Updating PACKER version from ${{ needs.check_versions.outputs.PACKER_VERSION_CURRENT }} to ${{ needs.check_versions.outputs.NEW_PACKER_VERSION }}"
-            sed -i "s/^ARG PACKER_VERSION=.*/ARG PACKER_VERSION=${{ needs.check_versions.outputs.NEW_PACKER_VERSION }}/" Dockerfile
-          fi
-          # TERRAFORM
-          if [ "${{ needs.check_versions.outputs.TERRAFORM_NEEDS_UPDATE }}" == "true" ]; then
-            echo "Updating TERRAFORM version from ${{ needs.check_versions.outputs.TERRAFORM_VERSION_CURRENT }} to ${{ needs.check_versions.outputs.NEW_TERRAFORM_VERSION }}"
-            sed -i "s/^ARG TERRAFORM_VERSION=.*/ARG TERRAFORM_VERSION=${{ needs.check_versions.outputs.NEW_TERRAFORM_VERSION }}/" Dockerfile
-          fi
-          # TERRAFORM_DOCS
-          if [ "${{ needs.check_versions.outputs.TERRAFORM_DOCS_NEEDS_UPDATE }}" == "true" ]; then
-            echo "Updating TERRAFORM_DOCS version from ${{ needs.check_versions.outputs.TERRAFORM_DOCS_VERSION_CURRENT }} to ${{ needs.check_versions.outputs.NEW_TERRAFORM_DOCS_VERSION }}"
-            sed -i "s/^ARG TERRAFORM_DOCS_VERSION=.*/ARG TERRAFORM_DOCS_VERSION=${{ needs.check_versions.outputs.NEW_TERRAFORM_DOCS_VERSION }}/" Dockerfile
-          fi
-          # TERRAGRUNT
-          if [ "${{ needs.check_versions.outputs.TERRAGRUNT_NEEDS_UPDATE }}" == "true" ]; then
-            echo "Updating TERRAGRUNT version from ${{ needs.check_versions.outputs.TERRAGRUNT_VERSION_CURRENT }} to ${{ needs.check_versions.outputs.NEW_TERRAGRUNT_VERSION }}"
-            sed -i "s/^ARG TERRAGRUNT_VERSION=.*/ARG TERRAGRUNT_VERSION=${{ needs.check_versions.outputs.NEW_TERRAGRUNT_VERSION }}/" Dockerfile
-          fi
-          # TFLINT
-          if [ "${{ needs.check_versions.outputs.TFLINT_NEEDS_UPDATE }}" == "true" ]; then
-            echo "Updating TFLINT version from ${{ needs.check_versions.outputs.TFLINT_VERSION_CURRENT }} to ${{ needs.check_versions.outputs.NEW_TFLINT_VERSION }}"
-            sed -i "s/^ARG TFLINT_VERSION=.*/ARG TFLINT_VERSION=${{ needs.check_versions.outputs.NEW_TFLINT_VERSION }}/" Dockerfile
-          fi
-          # TFSEC
-          if [ "${{ needs.check_versions.outputs.TFSEC_NEEDS_UPDATE }}" == "true" ]; then
-            echo "Updating TFSEC version from ${{ needs.check_versions.outputs.TFSEC_VERSION_CURRENT }} to ${{ needs.check_versions.outputs.NEW_TFSEC_VERSION }}"
-            sed -i "s/^ARG TFSEC_VERSION=.*/ARG TFSEC_VERSION=${{ needs.check_versions.outputs.NEW_TFSEC_VERSION }}/" Dockerfile
-          fi
-          echo "Dockerfile updates complete."
-          echo "Showing diff of Dockerfile:"
-          git diff Dockerfile
+      - name: Update aqua.yaml versions
+        run: bash scripts/update-aqua-versions.sh
 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: |-
-            Chore: Update software versions in Dockerfile
-
-            Automated update of software versions based on the latest releases.
-          branch: "update-versions/auto-${{ github.run_id }}"
+          commit-message: "chore: bump aqua tool versions"
+          branch: "chore/update-aqua-versions-${{ github.run_id }}"
           delete-branch: true
-          title: "Chore: Update software versions in Dockerfile"
+          title: "chore: bump aqua tool versions"
           body: |
-            Automated weekly check found updated versions for the following tools:
-
-            ${{ needs.check_versions.outputs.GCLOUD_NEEDS_UPDATE == 'true' && format('- GCloud: {0} -> {1}', needs.check_versions.outputs.GCLOUD_VERSION_CURRENT, needs.check_versions.outputs.NEW_GCLOUD_VERSION) }}
-            ${{ needs.check_versions.outputs.PACKER_NEEDS_UPDATE == 'true' && format('- Packer: {0} -> {1}', needs.check_versions.outputs.PACKER_VERSION_CURRENT, needs.check_versions.outputs.NEW_PACKER_VERSION) }}
-            ${{ needs.check_versions.outputs.TERRAFORM_NEEDS_UPDATE == 'true' && format('- Terraform: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_VERSION) }}
-            ${{ needs.check_versions.outputs.TERRAFORM_DOCS_NEEDS_UPDATE == 'true' && format('- Terraform Docs: {0} -> {1}', needs.check_versions.outputs.TERRAFORM_DOCS_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAFORM_DOCS_VERSION) }}
-            ${{ needs.check_versions.outputs.TERRAGRUNT_NEEDS_UPDATE == 'true' && format('- Terragrunt: {0} -> {1}', needs.check_versions.outputs.TERRAGRUNT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TERRAGRUNT_VERSION) }}
-            ${{ needs.check_versions.outputs.TFLINT_NEEDS_UPDATE == 'true' && format('- TFLint: {0} -> {1}', needs.check_versions.outputs.TFLINT_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFLINT_VERSION) }}
-            ${{ needs.check_versions.outputs.TFSEC_NEEDS_UPDATE == 'true' && format('- TFSec: {0} -> {1}', needs.check_versions.outputs.TFSEC_VERSION_CURRENT, needs.check_versions.outputs.NEW_TFSEC_VERSION) }}
+            Automated weekly check found updated versions in `aqua.yaml`.
 
             Please review and merge.
 
   build_and_test_image:
-    needs: update_dockerfile_and_pr
-    if: ${{ needs.update_dockerfile_and_pr.outputs.pr_number != '' }}
-    outputs:
-      pr_number: ${{ needs.update_dockerfile_and_pr.outputs.pr_number }}  
+    needs: update_and_pr
+    if: ${{ needs.update_and_pr.outputs.pr_number != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ needs.update_dockerfile_and_pr.outputs.pr_number }}/head
+          ref: refs/pull/${{ needs.update_and_pr.outputs.pr_number }}/head
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build and push base
-        uses: docker/build-push-action@v4
+      - name: Build base
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -324,8 +62,8 @@ jobs:
           cache-to: type=gha,mode=max
           target: base
 
-      - name: Build and push - gcp-devops
-        uses: docker/build-push-action@v4
+      - name: Build gcp-devops
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -335,8 +73,8 @@ jobs:
           cache-to: type=gha,mode=max
           target: gcp-devops
 
-      - name: Build and push - aws-devops
-        uses: docker/build-push-action@v3
+      - name: Build aws-devops
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -355,19 +93,5 @@ jobs:
             kubectl version --client && \
             packer --version && \
             terragrunt --version && \
-            tflint --version && \
-            tfsec --version \
-          "      
-
-  # auto_approve:
-  #   needs: build_and_test_image
-  #   runs-on: ubuntu-latest
-  #   if: ${{ success() && needs.build_and_test_image.outputs.pr_number != '' }}
-  #   permissions:
-  #     pull-requests: write
-  #   steps:
-  #     - name: Auto approve PR
-  #       uses: hmarr/auto-approve-action@v4
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         pull-request-number: ${{ needs.build_and_test_image.outputs.pr_number }}
+            tflint --version \
+          "

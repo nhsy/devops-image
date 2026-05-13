@@ -34,3 +34,5 @@ override.tf.json
 site/
 .claude/
 .env
+
+.tmp/
