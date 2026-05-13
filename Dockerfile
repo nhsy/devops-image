@@ -5,7 +5,7 @@ LABEL name=base-devops
 ARG TARGETARCH
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV AQUA_ROOT_DIR=/root/.local/share/aquaproj-aqua
+ENV AQUA_ROOT_DIR=/opt/aquaproj-aqua
 ENV PATH=/usr/lib/google-cloud-sdk/bin:$AQUA_ROOT_DIR/bin:$PATH
 ENV TF_PLUGIN_CACHE_DIR=/opt/terraform/plugins-cache
 ENV AQUA_GLOBAL_CONFIG=/etc/aqua/aqua.yaml
@@ -47,8 +47,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Layer 4: Aqua + tools (changes with aqua.yaml)
 COPY aqua.yaml /etc/aqua/aqua.yaml
 RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v3.0.1/aqua-installer | bash -s -- -v v2.31.0 && \
-  /root/.local/share/aquaproj-aqua/bin/aqua -c /etc/aqua/aqua.yaml i -a && \
-  test -f /root/.local/share/aquaproj-aqua/bin/terraform || (echo "Terraform not found after install!" && ls -R /root/.local && exit 1)
+  $AQUA_ROOT_DIR/bin/aqua -c /etc/aqua/aqua.yaml i -a && \
+  chmod -R o+rX $AQUA_ROOT_DIR && \
+  test -f $AQUA_ROOT_DIR/bin/terraform || (echo "Terraform not found after install!" && ls -R $AQUA_ROOT_DIR && exit 1)
 
 # Layer 5: Customizations + unit tests
 RUN useradd -m devops && \
@@ -57,19 +58,19 @@ RUN useradd -m devops && \
   /usr/local/bin/setup-bashrc.sh && \
   su - devops -c "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"" && \
   su - devops -c "/usr/local/bin/setup-zshrc.sh" && \
-  PATH=/root/.local/share/aquaproj-aqua/bin:$PATH /usr/local/bin/verify-installation.sh && \
+  /usr/local/bin/verify-installation.sh && \
   /usr/local/bin/cleanup-build.sh
 
 # Layer 6: AI CLI tools
 RUN --mount=type=cache,target=/root/.npm \
-  su - devops -c 'curl -fsSL https://claude.ai/install.sh | bash' && \
   npm install -g \
+    @anthropic-ai/claude-code@latest \
     @openai/codex@latest \
     @github/copilot@latest \
     @google/gemini-cli@latest \
     && \
   /usr/local/bin/cleanup-build.sh && \
-  /home/devops/.local/bin/claude --version && \
+  claude --version && \
   codex --version && \
   copilot --version && \
   gemini --version
