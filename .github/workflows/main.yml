@@ -16,7 +16,7 @@ concurrency:
 jobs:
 
   verify:
-    name: base image
+    name: verify base image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -48,7 +48,7 @@ jobs:
           "
 
   build:
-    name: images
+    name: build and push images
     needs: verify
     runs-on: ubuntu-latest
 
