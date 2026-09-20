@@ -1,0 +1,15 @@
+# Shared multi-platform build setup. Both jobs in main.yml need the same two
+# steps, and keeping them in one place means an action bump is one edit rather
+# than one per job — the kind of drift that left this repo on node20 actions in
+# some places and not others.
+name: buildx
+description: Set up QEMU and Docker Buildx for multi-platform builds
+
+runs:
+  using: composite
+  steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
