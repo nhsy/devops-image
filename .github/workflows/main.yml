@@ -123,12 +123,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: aws-devops
-
-
-      - name: Cleanup old tags
-        if: success() && steps.mode.outputs.push == 'true'
-        run: |
-          export DOCKERHUB_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
-          export DOCKERHUB_TOKEN="${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
-          ./scripts/cleanup-docker-hub.sh "${{ secrets.DOCKER_HUB_USERNAME }}" gcp-devops-image 5
-          ./scripts/cleanup-docker-hub.sh "${{ secrets.DOCKER_HUB_USERNAME }}" aws-devops-image 5
