@@ -36,6 +36,11 @@ concurrency:
   group: dockerhub-cleanup
   cancel-in-progress: false
 
+# Pruning talks to Docker Hub with its own token; the only thing it needs from
+# GitHub is the checkout that provides the script.
+permissions:
+  contents: read
+
 jobs:
   prune:
     name: prune old tags
