@@ -49,15 +49,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker run --rm base-image:latest sh -c " \
-            git --version && \
-            python3 --version && \
-            terraform version && \
-            kubectl version --client && \
-            packer --version && \
-            terragrunt --version && \
-            tflint --version \
-          "
+          # The same script the image build runs, shipped to /usr/local/bin by
+          # the Dockerfile. Inlining the list here is what let CI and the image
+          # drift onto different tool sets.
+          docker run --rm base-image:latest /usr/local/bin/verify-installation.sh
 
   build:
     name: build and push images

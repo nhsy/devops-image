@@ -48,46 +48,29 @@ tasks:
   test:base:
     desc: Test the base image stage, the same checks CI runs
     cmds:
-      # `sh -c`, unlike test:gcp and test:aws: the base stage sets no
-      # ENTRYPOINT, so there is no zsh to consume the -c.
-      - |
-        docker run --rm {{.BASE_IMAGE}} sh -c " \
-          git --version && \
-          python3 --version && \
-          terraform version && \
-          kubectl version --client && \
-          packer --version && \
-          terragrunt --version && \
-          tflint --version \
-        "
+      # No `sh -c` wrapper, unlike test:gcp and test:aws: the base stage sets
+      # no ENTRYPOINT, so the script is the command.
+      - docker run --rm {{.BASE_IMAGE}} /usr/local/bin/verify-installation.sh
 
   test:gcp:
     desc: Test GCP DevOps image
     cmds:
+      # ENTRYPOINT is zsh, so -c is consumed by the shell rather than docker.
+      # The shared script covers the base tools; only the cloud CLI is extra.
       - |
         docker run --rm {{.GCP_IMAGE}} -c " \
-          git --version && \
-          python3 --version && \
-          terraform version && \
-          kubectl version --client && \
-          packer --version && \
-          terragrunt --version && \
-          tflint --version && \
+          /usr/local/bin/verify-installation.sh && \
           gcloud version \
         "
 
   test:aws:
     desc: Test AWS DevOps image
     cmds:
+      # ENTRYPOINT is zsh, so -c is consumed by the shell rather than docker.
+      # The shared script covers the base tools; only the cloud CLI is extra.
       - |
         docker run --rm {{.AWS_IMAGE}} -c " \
-          git --version && \
-          python3 --version && \
-          terraform version && \
-          kubectl version --client && \
-          packer --version && \
-          terragrunt --version && \
-          tflint --version && \
+          /usr/local/bin/verify-installation.sh && \
           aws --version \
         "
 
