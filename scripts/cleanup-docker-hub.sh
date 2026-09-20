@@ -4,15 +4,18 @@ set -euo pipefail
 # Cleanup old image tags from Docker Hub (keeps N most recent)
 # Usage: ./cleanup-docker-hub.sh [NAMESPACE] [REPO] [KEEP_COUNT]
 # Environment: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN required
+#              DRY_RUN=true lists what would be deleted and deletes nothing
 
 NAMESPACE="${1:-}"
 REPO="${2:-}"
 KEEP_COUNT="${3:-5}"
+DRY_RUN="${DRY_RUN:-false}"
 
 if [[ -z "$NAMESPACE" ]] || [[ -z "$REPO" ]]; then
   echo "Usage: $0 <namespace> <repository> [keep_count]"
   echo "Keep count defaults to 5 (keeps 5 most recent tags)"
   echo "Environment variables required: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN"
+  echo "Optional: DRY_RUN=true to list deletions without performing them"
   exit 1
 fi
 
@@ -33,7 +36,11 @@ if [[ -z "$AUTH_TOKEN" ]] || [[ "$AUTH_TOKEN" == "null" ]]; then
 fi
 
 echo "Authenticated with Docker Hub"
-echo "Removing old tags from $NAMESPACE/$REPO (keeping $KEEP_COUNT most recent)"
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "DRY RUN - listing tags that would be removed from $NAMESPACE/$REPO (keeping $KEEP_COUNT most recent)"
+else
+  echo "Removing old tags from $NAMESPACE/$REPO (keeping $KEEP_COUNT most recent)"
+fi
 
 DELETED_COUNT=0
 
@@ -53,6 +60,12 @@ for TAG in $TAGS; do
 
   # Delete if we've kept enough
   if [[ $TAG_COUNT -gt $KEEP_COUNT ]]; then
+    if [[ "$DRY_RUN" == "true" ]]; then
+      echo "Would delete tag: $TAG"
+      DELETED_COUNT=$((DELETED_COUNT + 1))
+      continue
+    fi
+
     echo "Deleting tag: $TAG"
 
     DELETE_RESPONSE=$(curl -s -w "\n%{http_code}" -X DELETE \
@@ -69,4 +82,8 @@ for TAG in $TAGS; do
   fi
 done
 
-echo "Successfully deleted $DELETED_COUNT tag(s)"
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "Dry run complete - $DELETED_COUNT tag(s) would be deleted"
+else
+  echo "Successfully deleted $DELETED_COUNT tag(s)"
+fi

@@ -1,0 +1,85 @@
+# Prune old image tags from Docker Hub.
+#
+# Split out of the build job in main.yml. Pruning has nothing to do with whether
+# the images built, and coupling the two meant a failure here turned the whole
+# build red: every scheduled run from Feb to Sep 2026 reported failure because
+# this step called a script that had been deleted, while both images built and
+# published fine. Separated, a pruning failure is visible as a pruning failure.
+#
+# `schedule` only fires on the DEFAULT branch, so nothing here runs until it is
+# merged to main — a green branch is not evidence that it works. Use the
+# workflow_dispatch route to exercise it, which previews by default.
+name: Docker Hub Cleanup
+
+on:
+  schedule:
+    # Sunday 06:00 UTC, behind the 04:04 build in main.yml. The ordering is a
+    # courtesy rather than a requirement: the prune keeps the N newest tags
+    # whenever it runs, so landing either side of a build only shifts whether
+    # that build's tag is already counted.
+    - cron: '00 06 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: List what would be deleted without deleting it
+        type: boolean
+        # Manual runs preview by default; the schedule deletes for real.
+        default: true
+      keep-count:
+        description: Number of most recent tags to keep per repository
+        type: string
+        default: '5'
+
+# Not cancel-in-progress: this deletes things. Let a run finish rather than
+# killing it midway through a sweep.
+concurrency:
+  group: dockerhub-cleanup
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: prune old tags
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Without credentials the script exits 1 on its own usage check, which
+      # would show up as a red run every Sunday in a fork or before the secrets
+      # are set. Say why and stop instead.
+      - name: Are Docker Hub credentials configured?
+        id: gate
+        shell: bash
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DOCKERHUB_USERNAME}" ] && [ -n "${DOCKERHUB_TOKEN}" ]; then
+            echo "configured=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >>"$GITHUB_OUTPUT"
+            echo "DOCKER_HUB_USERNAME / DOCKER_HUB_ACCESS_TOKEN are not set, so there is nothing to prune." >>"$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Prune old tags
+        if: steps.gate.outputs.configured == 'true'
+        shell: bash
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          # inputs.dry-run is empty on a scheduled run, so the schedule deletes.
+          DRY_RUN: ${{ inputs.dry-run || false }}
+          KEEP_COUNT: ${{ inputs.keep-count || '5' }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Docker Hub prune"
+            echo
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
+          for repo in gcp-devops-image aws-devops-image; do
+            ./scripts/cleanup-docker-hub.sh "$DOCKERHUB_USERNAME" "$repo" "$KEEP_COUNT" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+          echo '```' >>"$GITHUB_STEP_SUMMARY"
