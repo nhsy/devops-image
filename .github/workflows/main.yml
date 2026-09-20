@@ -66,23 +66,38 @@ jobs:
       - name: Resolve whether to push
         id: mode
         shell: bash
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
         run: |
           set -euo pipefail
           # act builds and tests; it never publishes. A hard stop rather than
           # relying on the ref, so no local invocation can authenticate to
           # Docker Hub or write a tag.
           if [ "${ACT:-}" = "true" ]; then
-            echo "push=false" >>"$GITHUB_OUTPUT"
+            push=false
           # Keyed on the REF, not the event. github.event_name is "push" for a
           # branch push too, so testing the event would publish from anywhere
           # the workflow happens to run; refs/heads/main covers the push,
           # schedule and workflow_dispatch cases and nothing else. A pull
           # request is refs/pull/N/merge and so never matches.
           elif [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            echo "push=true" >>"$GITHUB_OUTPUT"
+            push=true
           else
-            echo "push=false" >>"$GITHUB_OUTPUT"
+            push=false
           fi
+          echo "push=$push" >>"$GITHUB_OUTPUT"
+
+          # Both build steps put this namespace in their tags whether or not we
+          # push, and buildx parses --tag either way. Where the secret is absent
+          # - under act, and on a fork PR - an empty namespace renders
+          # "/gcp-devops-image:latest", which is not a valid reference, so the
+          # build fails before it starts. Neither of those paths publishes, so a
+          # placeholder is enough to keep the build itself exercisable.
+          if [ "$push" = "true" ] && [ -z "${DOCKER_HUB_USERNAME:-}" ]; then
+            echo "Resolved push=true but DOCKER_HUB_USERNAME is unset." >&2
+            exit 1
+          fi
+          echo "namespace=${DOCKER_HUB_USERNAME:-local}" >>"$GITHUB_OUTPUT"
 
       - name: Login to Docker Hub
         if: steps.mode.outputs.push == 'true'
@@ -101,8 +116,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ steps.mode.outputs.push }}
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/gcp-devops-image:${{ steps.version.outputs.tag }}
+            ${{ steps.mode.outputs.namespace }}/gcp-devops-image:latest
+            ${{ steps.mode.outputs.namespace }}/gcp-devops-image:${{ steps.version.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: gcp-devops
@@ -114,8 +129,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ steps.mode.outputs.push }}
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/aws-devops-image:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/aws-devops-image:${{ steps.version.outputs.tag }}
+            ${{ steps.mode.outputs.namespace }}/aws-devops-image:latest
+            ${{ steps.mode.outputs.namespace }}/aws-devops-image:${{ steps.version.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: aws-devops
