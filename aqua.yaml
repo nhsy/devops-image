@@ -2,15 +2,15 @@
 # https://aquaproj.github.io/
 registries:
 - type: standard
-  ref: v4.511.1 # Latest registry as of now
+  ref: v4.565.0 # Latest registry as of now
 
 packages:
-- name: hashicorp/terraform@v1.15.3
-- name: gruntwork-io/terragrunt@v1.0.4
-- name: terraform-linters/tflint@v0.62.0
-- name: hashicorp/packer@v1.15.3
+- name: hashicorp/terraform@v1.16.3
+- name: gruntwork-io/terragrunt@v1.1.5
+- name: terraform-linters/tflint@v0.64.0
+- name: hashicorp/packer@v1.16.1
 
-- name: kubernetes/kubectl@v1.36.1
+- name: kubernetes/kubectl@v1.37.0
 - name: terraform-docs/terraform-docs@v0.24.0
-- name: go-task/task@v3.50.0
+- name: go-task/task@v3.53.1
 
