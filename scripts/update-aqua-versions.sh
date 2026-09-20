@@ -5,7 +5,26 @@ AQUA_FILE="${1:-aqua.yaml}"
 
 fetch_latest_tag() {
   local repo=$1
-  curl -sL "https://api.github.com/repos/${repo}/releases/latest" | jq -r '.tag_name'
+  local tag
+
+  # Unauthenticated, so no token or setup is needed to run this. That caps it at
+  # 60 requests/hour per IP and this makes eight, which is ample for a script
+  # someone runs by hand. If the cap is ever hit the check below turns it into a
+  # clear failure to retry, not a corrupted file.
+  tag=$(curl -sL "https://api.github.com/repos/${repo}/releases/latest" \
+    | jq -r '.tag_name // empty')
+
+  # Anything that is not a release tag - a rate-limit body, an error, a network
+  # failure - arrives here as empty or as junk. Refuse it. jq exits 0 on an
+  # error object, so `set -o pipefail` does not catch this on its own, and
+  # without the check the caller's sed writes the literal string "null" into
+  # aqua.yaml as a version.
+  if [[ ! "$tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Error: no valid release tag for ${repo} (got: '${tag:-<empty>}')" >&2
+    return 1
+  fi
+
+  printf '%s\n' "$tag"
 }
 
 update_package() {
