@@ -1,6 +1,6 @@
 # DevOps Image
 
-[![Build and Push](https://github.com/nhsy/devops-image/actions/workflows/main.yml/badge.svg)](https://github.com/nhsy/gcp-devops-image/actions/workflows/main.yml)
+[![Build and Push](https://github.com/nhsy/devops-image/actions/workflows/main.yml/badge.svg)](https://github.com/nhsy/devops-image/actions/workflows/main.yml)
 
 ## Introduction
 
@@ -8,19 +8,33 @@ The aim of this container image is to provide a baseline devops environment for 
 
 Configuration files for gcloud, ssh and terraform are kept separate from the host OS home folder.
 
-The Dockerfile pre-installs the following tools:
+The Dockerfile builds a shared `base` stage and two variants on top of it.
 
-* ansible
-* gcloud sdk
-* go-task
+The `base` stage pre-installs:
+
+* git, curl, jq, vim, tree, zip/unzip, gnupg, htop
+* zsh + oh-my-zsh (the entrypoint shell for both variants)
+* python3 + pip, Node.js 20
+* pre-commit
 * kubectl
-* mkdocs
 * packer
-* python3
 * terraform
+* terraform-docs
 * terragrunt
 * tflint
-* zsh
+* go-task
+* Claude Code, Codex, GitHub Copilot and Gemini CLIs
+
+`gcp-devops` adds:
+
+* gcloud SDK
+* gke-gcloud-auth-plugin
+
+`aws-devops` adds:
+
+* AWS CLI v2
+* Session Manager plugin
+* boto3, cfn-lint
 
 ## Pre-Requisites
 
@@ -36,7 +50,7 @@ N.B. For M1/M2/M3 Macbooks please use the latest version of Docker Desktop.
 
 This project uses [Aqua](https://aquaproj.github.io/) to manage CLI tool versions (Terraform, Kubectl, Packer, etc.).
 
-All tool versions are defined in [aqua.yaml](file:///Users/narish/Projects/nhsy-github/devops-image/aqua.yaml).
+All tool versions are defined in [aqua.yaml](aqua.yaml).
 
 To update a tool version, simply amend `aqua.yaml` and rebuild the image.
 
