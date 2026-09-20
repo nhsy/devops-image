@@ -1,0 +1,11 @@
+# Pin the runner image so a local `act` run is reproducible. act-latest is the
+# medium image: it carries docker and the common toolchain without pulling the
+# ~20GB full-size runner.
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+--container-daemon-socket /var/run/docker.sock
+# act force-pulls the runner on every run by default, which is a ~1GB round trip
+# per iteration. This still pulls when the image is absent.
+--pull=false
+# Never put a token or a Docker Hub credential here - this file is tracked.
+# The build job hard-disables publishing whenever ACT is set, so a local run
+# cannot reach the registry even if one is passed on the command line.

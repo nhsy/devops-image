@@ -1,6 +1,7 @@
 version: '3'
 
 vars:
+  BASE_IMAGE: devops-base
   GCP_IMAGE: gcp-devops
   AWS_IMAGE: aws-devops
 
@@ -9,6 +10,24 @@ tasks:
     desc: Show available tasks
     cmds:
       - task --list
+
+  deps:
+    desc: Check required tooling is present
+    cmds:
+      - docker --version
+      - docker buildx version
+      - pre-commit --version
+      # act is only needed for the ci:* tasks, so warn rather than fail: someone
+      # who only wants `task build:gcp` should not be blocked by it.
+      - >-
+        command -v act >/dev/null && act --version
+        || echo "act not installed (optional - only for task ci:list / ci:local / ci:image)"
+    silent: true
+
+  build:base:
+    desc: Build the base image stage (the one CI tests)
+    cmds:
+      - docker build --pull --force-rm --tag {{.BASE_IMAGE}} --target base .
 
   build:gcp:
     desc: Build GCP DevOps image
@@ -25,6 +44,22 @@ tasks:
     cmds:
       - task: build:gcp
       - task: build:aws
+
+  test:base:
+    desc: Test the base image stage, the same checks CI runs
+    cmds:
+      # `sh -c`, unlike test:gcp and test:aws: the base stage sets no
+      # ENTRYPOINT, so there is no zsh to consume the -c.
+      - |
+        docker run --rm {{.BASE_IMAGE}} sh -c " \
+          git --version && \
+          python3 --version && \
+          terraform version && \
+          kubectl version --client && \
+          packer --version && \
+          terragrunt --version && \
+          tflint --version \
+        "
 
   test:gcp:
     desc: Test GCP DevOps image
@@ -62,6 +97,32 @@ tasks:
       - task: test:gcp
       - task: test:aws
 
+  test:ci:
+    desc: Run the verification CI runs, locally and without docker-in-docker
+    cmds:
+      - task: lint
+      - task: build:base
+      - task: test:base
+
+  ci:list:
+    desc: List the CI jobs act resolves from the workflow
+    cmds:
+      - act -l -W .github/workflows/main.yml
+
+  ci:local:
+    desc: Run the CI test_dockerfile job under act
+    cmds:
+      - act push -W .github/workflows/main.yml -j test_dockerfile
+
+  ci:image:
+    desc: Run the CI build job under act - builds both targets, never publishes
+    cmds:
+      # -j still runs the job's `needs`, so this is test_dockerfile then the
+      # image build. Slow: the build steps are linux/amd64,linux/arm64 and arm64
+      # goes through QEMU. The workflow hard-disables publishing whenever ACT is
+      # set, so this cannot reach Docker Hub.
+      - act push -W .github/workflows/main.yml -j build
+
   lint:
     desc: Run pre-commit hooks on all files
     cmds:
@@ -70,11 +131,12 @@ tasks:
   clean:
     desc: Remove built images
     cmds:
+      - docker rmi {{.BASE_IMAGE}} || true
       - docker rmi {{.GCP_IMAGE}} || true
       - docker rmi {{.AWS_IMAGE}} || true
 
   clean:dockerhub:
-    desc: Purge old Docker Hub image tags, keeping the N most recent (default 5)
+    desc: Purge old Docker Hub image tags, keeping the N most recent (default 5). Set DRY_RUN=true to preview
     dotenv: [.env]
     usage: task clean:dockerhub -- <namespace> <repository> [keep_count]
     cmds:
