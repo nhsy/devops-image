@@ -44,13 +44,29 @@ fi
 
 DELETED_COUNT=0
 
-# Fetch all tags, sort by date, skip the keep_count most recent and 'latest' tag
-TAGS=$(curl -s -H "Authorization: Bearer $AUTH_TOKEN" \
-  "https://hub.docker.com/v2/repositories/$NAMESPACE/$REPO/tags/?page_size=100" | \
-  jq -r '.results | sort_by(.last_updated) | reverse | .[].name')
+# Docker Hub pages its tag listing. Only the first page was ever requested, so a
+# repository with more than page_size tags never revealed its oldest ones -
+# exactly the tags this script exists to delete. Follow .next to the end, then
+# sort across the whole set; sorting a single page would order it by the wrong
+# population.
+TAGS_JSON="$(mktemp)"
+trap 'rm -f "$TAGS_JSON"' EXIT
+
+NEXT_URL="https://hub.docker.com/v2/repositories/$NAMESPACE/$REPO/tags/?page_size=100"
+while [[ -n "$NEXT_URL" ]] && [[ "$NEXT_URL" != "null" ]]; do
+  PAGE=$(curl -sfS -H "Authorization: Bearer $AUTH_TOKEN" "$NEXT_URL")
+  jq -c '.results[]' <<<"$PAGE" >>"$TAGS_JSON"
+  NEXT_URL=$(jq -r '.next // ""' <<<"$PAGE")
+done
+
+# Read into an array rather than iterating an unquoted $TAGS: word splitting
+# would break on a tag containing whitespace and glob-expand one containing *.
+mapfile -t TAGS < <(jq -s -r 'sort_by(.last_updated) | reverse | .[].name' "$TAGS_JSON")
+
+echo "Found ${#TAGS[@]} tag(s) in $NAMESPACE/$REPO"
 
 TAG_COUNT=0
-for TAG in $TAGS; do
+for TAG in "${TAGS[@]}"; do
   # Skip 'latest' tag
   if [[ "$TAG" == "latest" ]]; then
     continue

@@ -83,8 +83,19 @@ jobs:
             echo
             echo '```'
           } >>"$GITHUB_STEP_SUMMARY"
+          failed=()
           for repo in gcp-devops-image aws-devops-image; do
-            ./scripts/cleanup-docker-hub.sh "$DOCKERHUB_USERNAME" "$repo" "$KEEP_COUNT" \
-              | tee -a "$GITHUB_STEP_SUMMARY"
+            # Under set -e a failure on the first repository would skip the
+            # second entirely, so half the prune would silently not happen.
+            # Record it, carry on, and fail the step once at the end.
+            if ! ./scripts/cleanup-docker-hub.sh "$DOCKERHUB_USERNAME" "$repo" "$KEEP_COUNT" \
+                | tee -a "$GITHUB_STEP_SUMMARY"; then
+              failed+=("$repo")
+            fi
           done
           echo '```' >>"$GITHUB_STEP_SUMMARY"
+
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "Pruning failed for: ${failed[*]}" >&2
+            exit 1
+          fi
