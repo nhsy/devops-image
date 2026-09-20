@@ -28,8 +28,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up QEMU and Buildx
+      - name: Set up Buildx
         uses: ./.github/actions/buildx
+        with:
+          # This job builds one platform and loads it locally, so QEMU would be
+          # set up and never used.
+          qemu: 'false'
 
       - name: Build base image
         uses: docker/build-push-action@v7
