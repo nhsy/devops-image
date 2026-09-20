@@ -10,7 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  update_and_pr:
+  update:
+    name: bump versions
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,18 +39,19 @@ jobs:
 
             Please review and merge.
 
-  build_and_test_image:
-    needs: update_and_pr
-    if: ${{ needs.update_and_pr.outputs.pr_number != '' }}
+  build:
+    name: images
+    needs: update
+    if: ${{ needs.update.outputs.pr_number != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v7
         with:
-          ref: refs/pull/${{ needs.update_and_pr.outputs.pr_number }}/head
+          ref: refs/pull/${{ needs.update.outputs.pr_number }}/head
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+      - name: Set up QEMU and Buildx
+        uses: ./.github/actions/buildx
 
       - name: Build base
         uses: docker/build-push-action@v7

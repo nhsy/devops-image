@@ -110,14 +110,14 @@ tasks:
       - act -l -W .github/workflows/main.yml
 
   ci:local:
-    desc: Run the CI test_dockerfile job under act
+    desc: Run the CI verify job under act - builds and tests the base stage
     cmds:
-      - act push -W .github/workflows/main.yml -j test_dockerfile
+      - act push -W .github/workflows/main.yml -j verify
 
   ci:image:
     desc: Run the CI build job under act - builds both targets, never publishes
     cmds:
-      # -j still runs the job's `needs`, so this is test_dockerfile then the
+      # -j still runs the job's `needs`, so this is verify then the
       # image build. Slow: the build steps are linux/amd64,linux/arm64 and arm64
       # goes through QEMU. The workflow hard-disables publishing whenever ACT is
       # set, so this cannot reach Docker Hub.

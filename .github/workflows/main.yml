@@ -15,7 +15,8 @@ concurrency:
 
 jobs:
 
-  test_dockerfile:
+  verify:
+    name: base image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,7 +48,8 @@ jobs:
           "
 
   build:
-    needs: test_dockerfile
+    name: images
+    needs: verify
     runs-on: ubuntu-latest
 
     steps:
