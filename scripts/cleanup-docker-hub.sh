@@ -64,7 +64,7 @@ for TAG in $TAGS; do
     if [[ "$HTTP_CODE" == "204" ]]; then
       DELETED_COUNT=$((DELETED_COUNT + 1))
     else
-      echo "  ⚠ Failed to delete tag (HTTP $HTTP_CODE)"
+      echo "  Warning: Failed to delete tag (HTTP $HTTP_CODE)"
     fi
   fi
 done

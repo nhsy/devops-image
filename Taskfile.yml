@@ -74,9 +74,9 @@ tasks:
       - docker rmi {{.AWS_IMAGE}} || true
 
   clean:dockerhub:
-    desc: Purge Docker Hub images older than 30 days
+    desc: Purge old Docker Hub image tags, keeping the N most recent (default 5)
     dotenv: [.env]
-    usage: task clean:dockerhub -- <namespace> <repository> [days_old]
+    usage: task clean:dockerhub -- <namespace> <repository> [keep_count]
     cmds:
       - |
         if [[ -z "${DOCKERHUB_USERNAME:-}" ]] || [[ -z "${DOCKERHUB_TOKEN:-}" ]]; then
