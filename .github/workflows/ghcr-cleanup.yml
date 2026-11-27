@@ -1,0 +1,63 @@
+# Prune old image versions from GHCR.
+#
+# Kept apart from the build in main.yml so a pruning failure shows up as a
+# pruning failure, not as a red build.
+#
+# dataaxiom/ghcr-cleanup-action rather than actions/delete-package-versions:
+# each multi-arch push is several GHCR package versions (an index, one manifest
+# per platform, attestations). The first-party action counts those one by one,
+# so "keep 5" keeps about one image and can delete the platform manifests under
+# a kept tag. This action treats an image and its children as one unit.
+#
+# `schedule` only fires on the DEFAULT branch, so nothing here runs until it is
+# merged to main. Use the workflow_dispatch route to exercise it, which previews
+# by default.
+name: GHCR Cleanup
+
+on:
+  schedule:
+    # Sunday 06:00 UTC, behind the 04:04 build in main.yml. The prune keeps the
+    # N newest tagged images whenever it runs, so the ordering is a courtesy.
+    - cron: '00 06 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: List what would be deleted without deleting it
+        type: boolean
+        # Manual runs preview by default; the schedule deletes for real.
+        default: true
+      keep-count:
+        description: Number of most recent tagged images to keep per package
+        type: string
+        default: '5'
+
+# Not cancel-in-progress: this deletes things. Let a run finish rather than
+# killing it midway through a sweep.
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prune:
+    name: prune old images
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Prune old images
+        # Third-party action with delete rights on the packages: pinned to the
+        # v1.3.0 commit so a moved tag cannot change what runs here.
+        uses: dataaxiom/ghcr-cleanup-action@ac45a8c04b1eb4b27974ca79a0a74f344c93664b # v1.3.0
+        with:
+          packages: gcp-devops-image,aws-devops-image
+          # latest always points at the newest build; never delete it, even if
+          # its sha tag has aged out of keep-n-tagged.
+          exclude-tags: latest
+          keep-n-tagged: ${{ inputs.keep-count || '5' }}
+          # Untagged images are leftovers from tags that moved or were deleted.
+          delete-untagged: true
+          # inputs.dry-run is empty on a scheduled run, so the schedule deletes.
+          dry-run: ${{ inputs.dry-run || false }}

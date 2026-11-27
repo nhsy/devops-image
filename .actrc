@@ -6,6 +6,6 @@
 # act force-pulls the runner on every run by default, which is a ~1GB round trip
 # per iteration. This still pulls when the image is absent.
 --pull=false
-# Never put a token or a Docker Hub credential here - this file is tracked.
+# Never put a token or a registry credential here - this file is tracked.
 # The build job hard-disables publishing whenever ACT is set, so a local run
 # cannot reach the registry even if one is passed on the command line.

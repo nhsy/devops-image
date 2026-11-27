@@ -13,9 +13,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Neither job writes anything back to the repository; publishing uses a Docker
-# Hub token, not GITHUB_TOKEN. Declared explicitly so the workflow does not
-# inherit whatever the repository default happens to be.
+# Read-only by default. Only the build job, which publishes to GHCR with
+# GITHUB_TOKEN, is granted packages: write. Declared explicitly so the workflow
+# does not inherit whatever the repository default happens to be.
 permissions:
   contents: read
 
@@ -58,6 +58,9 @@ jobs:
     name: build and push images
     needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
@@ -77,13 +80,11 @@ jobs:
       - name: Resolve whether to push
         id: mode
         shell: bash
-        env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
         run: |
           set -euo pipefail
           # act builds and tests; it never publishes. A hard stop rather than
           # relying on the ref, so no local invocation can authenticate to
-          # Docker Hub or write a tag.
+          # GHCR or write a tag.
           if [ "${ACT:-}" = "true" ]; then
             push=false
           # Keyed on the REF, not the event. github.event_name is "push" for a
@@ -98,27 +99,21 @@ jobs:
           fi
           echo "push=$push" >>"$GITHUB_OUTPUT"
 
-          # Both build steps put this namespace in their tags whether or not we
-          # push, and buildx parses --tag either way. Where the secret is absent
-          # - under act, and on a fork PR - an empty namespace renders
-          # "/gcp-devops-image:latest", which is not a valid reference, so the
-          # build fails before it starts. Neither of those paths publishes, so a
-          # placeholder is enough to keep the build itself exercisable.
-          if [ "$push" = "true" ] && [ -z "${DOCKER_HUB_USERNAME:-}" ]; then
-            echo "Resolved push=true but DOCKER_HUB_USERNAME is unset." >&2
-            exit 1
-          fi
-          echo "namespace=${DOCKER_HUB_USERNAME:-local}" >>"$GITHUB_OUTPUT"
+          # Image references must be lowercase and owner names need not be.
+          # GITHUB_REPOSITORY_OWNER is always set, including under act, so the
+          # tags stay valid on paths that never push.
+          echo "namespace=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >>"$GITHUB_OUTPUT"
 
       - name: Set up QEMU and Buildx
         uses: ./.github/actions/buildx
 
-      - name: Login to Docker Hub
+      - name: Login to GHCR
         if: steps.mode.outputs.push == 'true'
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push - gcp-devops
         uses: docker/build-push-action@v7
@@ -129,6 +124,9 @@ jobs:
           tags: |
             ${{ steps.mode.outputs.namespace }}/gcp-devops-image:latest
             ${{ steps.mode.outputs.namespace }}/gcp-devops-image:${{ steps.version.outputs.tag }}
+          # Links the GHCR package to this repository, which is what lets this
+          # repository's GITHUB_TOKEN push to it and prune it.
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: gcp-devops
@@ -142,6 +140,9 @@ jobs:
           tags: |
             ${{ steps.mode.outputs.namespace }}/aws-devops-image:latest
             ${{ steps.mode.outputs.namespace }}/aws-devops-image:${{ steps.version.outputs.tag }}
+          # Links the GHCR package to this repository, which is what lets this
+          # repository's GITHUB_TOKEN push to it and prune it.
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           target: aws-devops

@@ -103,7 +103,7 @@ tasks:
       # -j still runs the job's `needs`, so this is verify then the
       # image build. Slow: the build steps are linux/amd64,linux/arm64 and arm64
       # goes through QEMU. The workflow hard-disables publishing whenever ACT is
-      # set, so this cannot reach Docker Hub.
+      # set, so this cannot reach GHCR.
       - act push -W .github/workflows/main.yml -j build
 
   lint:
@@ -117,18 +117,3 @@ tasks:
       - docker rmi {{.BASE_IMAGE}} || true
       - docker rmi {{.GCP_IMAGE}} || true
       - docker rmi {{.AWS_IMAGE}} || true
-
-  clean:dockerhub:
-    desc: Purge old Docker Hub image tags, keeping the N most recent (default 5). Set DRY_RUN=true to preview
-    dotenv: [.env]
-    usage: task clean:dockerhub -- <namespace> <repository> [keep_count]
-    cmds:
-      - |
-        if [[ -z "${DOCKERHUB_USERNAME:-}" ]] || [[ -z "${DOCKERHUB_TOKEN:-}" ]]; then
-          echo "Error: Set DOCKERHUB_USERNAME and DOCKERHUB_TOKEN environment variables"
-          exit 1
-        fi
-        ./scripts/cleanup-docker-hub.sh {{.CLI_ARGS}}
-    requires:
-      vars:
-        - CLI_ARGS
