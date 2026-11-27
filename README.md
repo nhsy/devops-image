@@ -93,23 +93,29 @@ task test:all
 
 ## Using the image
 
+The image runs as the `devops` user (home `/home/devops`) with UID/GID 1000, so files in bind mounts
+match the usual host user.
+
 Create a shell script in your $HOME folder named `docker-start.sh` with the contents:
 
 ```shell
-NAME="$(basename $PWD)"-$RANDOM
+#!/bin/bash
+set -euo pipefail
 
-[ ! -d "$(pwd)/.config" ] && mkdir $(pwd)/.config
-[ ! -d "$(pwd)/.ssh" ] && mkdir $(pwd)/.ssh
-[ ! -f "$(pwd)/.terraformrc" ] && touch $(pwd)/.terraformrc
+NAME="$(basename "$PWD")"-$RANDOM
+
+[ ! -d "$(pwd)/.config" ] && mkdir "$(pwd)/.config"
+[ ! -d "$(pwd)/.ssh" ] && mkdir "$(pwd)/.ssh"
+[ ! -f "$(pwd)/.terraformrc" ] && touch "$(pwd)/.terraformrc"
 
 echo "Starting container - $NAME"
 docker run -ti --rm \
-    -v "$(pwd)"/.config:/root/.config \
-    -v "$(pwd)"/.ssh:/root/.ssh \
-    -v "$(pwd)"/.terraformrc:/root/.terraformrc \
+    -v "$(pwd)"/.config:/home/devops/.config \
+    -v "$(pwd)"/.ssh:/home/devops/.ssh \
+    -v "$(pwd)"/.terraformrc:/home/devops/.terraformrc \
     -v "$(pwd)":/work \
     -w /work \
-    --name $NAME \
+    --name "$NAME" \
     gcp-devops
 ```
 

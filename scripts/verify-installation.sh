@@ -9,6 +9,15 @@ set -eu
 echo "Running Unit Tests..."
 echo "Shell: ${SHELL:-not set}"
 
+# devops must be UID/GID 1000 to match the host user in bind mounts.
+devops_uid="$(id -u devops)"
+devops_gid="$(id -g devops)"
+echo "devops uid/gid: ${devops_uid}/${devops_gid}"
+if [ "$devops_uid" != 1000 ] || [ "$devops_gid" != 1000 ]; then
+  echo "devops user must be UID/GID 1000" >&2
+  exit 1
+fi
+
 git --version
 python3 --version
 kubectl version --client

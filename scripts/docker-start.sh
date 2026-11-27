@@ -9,9 +9,9 @@ NAME="$(basename "$PWD")"-$RANDOM
 
 echo "Starting container - $NAME"
 docker run -ti --rm \
-    -v "$(pwd)"/.config:/root/.config \
-    -v "$(pwd)"/.ssh:/root/.ssh \
-    -v "$(pwd)"/.terraformrc:/root/.terraformrc \
+    -v "$(pwd)"/.config:/home/devops/.config \
+    -v "$(pwd)"/.ssh:/home/devops/.ssh \
+    -v "$(pwd)"/.terraformrc:/home/devops/.terraformrc \
     -v "$(pwd)":/work \
     -w /work \
     --name "$NAME" \

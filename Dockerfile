@@ -52,7 +52,11 @@ RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v3.0.1/
   test -f $AQUA_ROOT_DIR/bin/terraform || (echo "Terraform not found after install!" && ls -R $AQUA_ROOT_DIR && exit 1)
 
 # Layer 5: Customizations + unit tests
-RUN useradd -m devops && \
+# ubuntu:24.04 ships user ubuntu at UID/GID 1000; remove it so devops gets 1000
+# and matches the usual host user in bind mounts and devcontainers.
+RUN userdel -r ubuntu && \
+  groupadd -g 1000 devops && \
+  useradd -m -u 1000 -g 1000 devops && \
   mkdir -p /opt/terraform/plugins-cache && \
   /usr/local/bin/setup-zshrc.sh && \
   /usr/local/bin/setup-bashrc.sh && \
