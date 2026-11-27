@@ -14,7 +14,7 @@ The `base` stage pre-installs:
 
 * git, curl, jq, vim, tree, zip/unzip, gnupg, htop
 * zsh + oh-my-zsh (the entrypoint shell for both variants)
-* python3 + pip, Node.js 20
+* python3 + pip, Node.js
 * pre-commit
 * kubectl
 * packer

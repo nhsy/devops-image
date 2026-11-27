@@ -34,10 +34,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   zip \
   zsh
 
-# Layer 2: Node.js 20 via NodeSource (changes rarely)
+# Layer 2: Node.js 24 via NodeSource (changes rarely)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+  curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
   apt-get install -y --no-install-recommends nodejs
 
 # Layer 3: Python packages (changes occasionally)
@@ -46,7 +46,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Layer 4: Aqua + tools (changes with aqua.yaml)
 COPY aqua.yaml /etc/aqua/aqua.yaml
-RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v3.0.1/aqua-installer | bash -s -- -v v2.31.0 && \
+RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v4.1.2/aqua-installer | bash -s -- -v v2.66.1 && \
   $AQUA_ROOT_DIR/bin/aqua -c /etc/aqua/aqua.yaml i -a && \
   chmod -R o+rX $AQUA_ROOT_DIR && \
   test -f $AQUA_ROOT_DIR/bin/terraform || (echo "Terraform not found after install!" && ls -R $AQUA_ROOT_DIR && exit 1)
