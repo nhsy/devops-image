@@ -13,7 +13,7 @@ repos:
         name: shellcheck
         language: system
         entry: shellcheck
-        files: ^scripts/.*\.sh$
+        types: [shell]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
