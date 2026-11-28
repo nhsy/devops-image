@@ -32,7 +32,9 @@ override.tf.json
 **/__pycache__/*
 # Don't Publish locally built mkdocs site directory
 site/
-.claude/
+# Claude Code: personal settings stay local; shared skills are tracked.
+.claude/*
+!.claude/skills/
 .env
 
 .tmp/
