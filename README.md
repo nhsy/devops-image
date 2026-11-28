@@ -1,6 +1,7 @@
 # DevOps Image
 
 [![Build and Push](https://github.com/nhsy/devops-image/actions/workflows/main.yml/badge.svg)](https://github.com/nhsy/devops-image/actions/workflows/main.yml)
+[![Lint](https://github.com/nhsy/devops-image/actions/workflows/lint.yml/badge.svg)](https://github.com/nhsy/devops-image/actions/workflows/lint.yml)
 
 ## Introduction
 
