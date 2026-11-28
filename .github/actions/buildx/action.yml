@@ -1,24 +1,13 @@
-# Shared multi-platform build setup. Both jobs in main.yml need buildx, and
-# keeping it in one place means an action bump is one edit rather than one per
-# job - the kind of drift that left this repo on node20 actions in some places
-# and not others.
+# Shared Buildx setup. Every job in main.yml needs buildx, and keeping it in one
+# place means an action bump is one edit rather than one per job - the kind of
+# drift that left this repo on node20 actions in some places and not others.
+#
+# No QEMU: each build job runs on a runner of the architecture it builds.
 name: buildx
-description: Set up Docker Buildx, and optionally QEMU for cross-platform builds
-
-inputs:
-  qemu:
-    description: >-
-      Register QEMU so the runner can build for other architectures. Only the
-      multi-platform build needs it; a single-platform build pays the setup cost
-      for an emulator it never invokes.
-    default: 'true'
+description: Set up Docker Buildx
 
 runs:
   using: composite
   steps:
-    - name: Set up QEMU
-      if: inputs.qemu == 'true'
-      uses: docker/setup-qemu-action@v4
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4

@@ -12,8 +12,6 @@ ENV AQUA_GLOBAL_CONFIG=/etc/aqua/aqua.yaml
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-COPY --chmod=755 scripts/*.sh /usr/local/bin/
-
 # Layer 1: APT packages (changes rarely)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -50,6 +48,11 @@ RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v4.1.2/
   $AQUA_ROOT_DIR/bin/aqua -c /etc/aqua/aqua.yaml i -a && \
   chmod -R o+rX $AQUA_ROOT_DIR && \
   test -f $AQUA_ROOT_DIR/bin/terraform || (echo "Terraform not found after install!" && ls -R $AQUA_ROOT_DIR && exit 1)
+
+# Scripts are first used by Layer 5, so they are copied here rather than at the
+# top: a script change then rebuilds only Layer 5 onwards, not apt, Node, pip
+# and aqua.
+COPY --chmod=755 scripts/*.sh /usr/local/bin/
 
 # Layer 5: Customizations + unit tests
 # ubuntu:24.04 ships user ubuntu at UID/GID 1000; remove it so devops gets 1000

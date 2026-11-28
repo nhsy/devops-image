@@ -98,13 +98,13 @@ tasks:
       - act push -W .github/workflows/main.yml -j verify
 
   ci:image:
-    desc: Run the CI build job under act - builds both targets, never publishes
+    desc: Run the CI build job under act - builds both targets for amd64, never publishes
     cmds:
       # -j still runs the job's `needs`, so this is verify then the
-      # image build. Slow: the build steps are linux/amd64,linux/arm64 and arm64
-      # goes through QEMU. The workflow hard-disables publishing whenever ACT is
-      # set, so this cannot reach GHCR.
-      - act push -W .github/workflows/main.yml -j build
+      # image build. Only the amd64 legs: CI builds arm64 on native arm
+      # runners, which act cannot provide. The workflow hard-disables
+      # publishing whenever ACT is set, so this cannot reach GHCR.
+      - act push -W .github/workflows/main.yml -j build --matrix arch:amd64
 
   lint:
     desc: Run pre-commit hooks on all files

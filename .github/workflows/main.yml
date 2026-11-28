@@ -13,70 +13,34 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Read-only by default. Only the build job, which publishes to GHCR with
-# GITHUB_TOKEN, is granted packages: write. Declared explicitly so the workflow
-# does not inherit whatever the repository default happens to be.
+# Read-only by default. Only the build and merge jobs, which publish to GHCR
+# with GITHUB_TOKEN, are granted packages: write. Declared explicitly so the
+# workflow does not inherit whatever the repository default happens to be.
 permissions:
   contents: read
+
+# Caching: every build writes its own gha cache scope. They used to share the
+# default scope, and each cache-to replaces the scope's index, so every build
+# overwrote the one before it and the arm64 base and the cloud CLI layers were
+# rebuilt on every run.
+#
+# Freshness: the weekly schedule builds with no-cache, so the @latest AI CLIs
+# and apt updates are picked up even when nothing in the repository changed.
+# Pushes and pull requests reuse the cache.
 
 jobs:
 
   verify:
     name: verify base image
     runs-on: ubuntu-latest
+    outputs:
+      push: ${{ steps.mode.outputs.push }}
+      namespace: ${{ steps.mode.outputs.namespace }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Set up Buildx
-        uses: ./.github/actions/buildx
-        with:
-          # This job builds one platform and loads it locally, so QEMU would be
-          # set up and never used.
-          qemu: 'false'
-
-      - name: Build base image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          load: true
-          tags: base-image:latest
-          target: base
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run tests in container
-        shell: bash
-        run: |
-          set -euo pipefail
-          # The same script the image build runs, shipped to /usr/local/bin by
-          # the Dockerfile. Inlining the list here is what let CI and the image
-          # drift onto different tool sets.
-          docker run --rm base-image:latest /usr/local/bin/verify-installation.sh
-
-  build:
-    name: build and push images
-    needs: verify
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Generate version tag
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Read from the environment rather than a template expression. Those
-          # are substituted into the script text before bash parses it -
-          # harmless for a commit sha, but it is the shape that becomes an
-          # injection the day the value is something a contributor controls.
-          echo "tag=${GITHUB_SHA:0:8}" >>"$GITHUB_OUTPUT"
-
+      # Resolved once here so the build matrix and the merge job agree on it.
       - name: Resolve whether to push
         id: mode
         shell: bash
@@ -101,48 +65,180 @@ jobs:
 
           # Image references must be lowercase and owner names need not be.
           # GITHUB_REPOSITORY_OWNER is always set, including under act, so the
-          # tags stay valid on paths that never push.
+          # references stay valid on paths that never push.
           echo "namespace=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >>"$GITHUB_OUTPUT"
 
-      - name: Set up QEMU and Buildx
+      - name: Set up Buildx
+        uses: ./.github/actions/buildx
+
+      - name: Build base image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: base-image:latest
+          target: base
+          no-cache: ${{ github.event_name == 'schedule' }}
+          cache-from: type=gha,scope=base-amd64
+          cache-to: type=gha,scope=base-amd64,mode=max
+
+      - name: Run tests in container
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The same script the image build runs, shipped to /usr/local/bin by
+          # the Dockerfile. Inlining the list here is what let CI and the image
+          # drift onto different tool sets.
+          docker run --rm base-image:latest /usr/local/bin/verify-installation.sh
+
+  # One job per image and platform, each on a runner of that architecture, so
+  # arm64 builds natively instead of under QEMU and all four run at once. On
+  # main each job pushes its single-platform image by digest only; the merge
+  # job below puts the tags on.
+  build:
+    name: build ${{ matrix.image }}-devops (${{ matrix.arch }})
+    needs: verify
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        image: [gcp, aws]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Buildx
         uses: ./.github/actions/buildx
 
       - name: Login to GHCR
-        if: steps.mode.outputs.push == 'true'
+        if: needs.verify.outputs.push == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push - gcp-devops
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: ${{ steps.mode.outputs.push }}
-          tags: |
-            ${{ steps.mode.outputs.namespace }}/gcp-devops-image:latest
-            ${{ steps.mode.outputs.namespace }}/gcp-devops-image:${{ steps.version.outputs.tag }}
-          # Links the GHCR package to this repository, which is what lets this
-          # repository's GITHUB_TOKEN push to it and prune it.
-          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          target: gcp-devops
+      - name: Resolve build output
+        id: output
+        shell: bash
+        env:
+          PUSH: ${{ needs.verify.outputs.push }}
+          IMAGE: ${{ needs.verify.outputs.namespace }}/${{ matrix.image }}-devops-image
+        run: |
+          set -euo pipefail
+          # On main, push the single-platform image by digest only; the merge
+          # job tags it. Otherwise build into the cache only: nothing is pushed
+          # or loaded.
+          if [ "$PUSH" = "true" ]; then
+            echo "outputs=type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "outputs=type=cacheonly" >>"$GITHUB_OUTPUT"
+          fi
 
-      - name: Build and push - aws-devops
+      - name: Build
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
-          push: ${{ steps.mode.outputs.push }}
-          tags: |
-            ${{ steps.mode.outputs.namespace }}/aws-devops-image:latest
-            ${{ steps.mode.outputs.namespace }}/aws-devops-image:${{ steps.version.outputs.tag }}
+          platforms: linux/${{ matrix.arch }}
+          target: ${{ matrix.image }}-devops
           # Links the GHCR package to this repository, which is what lets this
           # repository's GITHUB_TOKEN push to it and prune it.
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          target: aws-devops
+          outputs: ${{ steps.output.outputs.outputs }}
+          no-cache: ${{ github.event_name == 'schedule' }}
+          # The amd64 legs also read the verify job's scope, which holds the
+          # base layers they share with it.
+          cache-from: |
+            type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
+            type=gha,scope=base-${{ matrix.arch }}
+          cache-to: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }},mode=max
+
+      - name: Export digest
+        if: needs.verify.outputs.push == 'true'
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/digests"
+          touch "${RUNNER_TEMP}/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest
+        if: needs.verify.outputs.push == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Combines each image's two platform digests into one multi-arch tag.
+  merge:
+    name: publish ${{ matrix.image }}-devops
+    needs: [verify, build]
+    if: needs.verify.outputs.push == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        image: [gcp, aws]
+
+    steps:
+      # Only for the local buildx action below.
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          pattern: digests-${{ matrix.image }}-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+
+      - name: Set up Buildx
+        uses: ./.github/actions/buildx
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push the multi-arch tags
+        shell: bash
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ${{ needs.verify.outputs.namespace }}/${{ matrix.image }}-devops-image
+          SOURCE: https://github.com/${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Read from the environment rather than a template expression, so the
+          # values are never substituted into the script text.
+          tag="${GITHUB_SHA:0:8}"
+          refs=()
+          for digest in *; do
+            refs+=("${IMAGE}@sha256:${digest}")
+          done
+          if [ "${#refs[@]}" -ne 2 ]; then
+            echo "Expected 2 platform digests, found ${#refs[@]}" >&2
+            exit 1
+          fi
+          docker buildx imagetools create \
+            --annotation "index:org.opencontainers.image.source=${SOURCE}" \
+            -t "${IMAGE}:latest" \
+            -t "${IMAGE}:${tag}" \
+            "${refs[@]}"
+          docker buildx imagetools inspect "${IMAGE}:${tag}"
