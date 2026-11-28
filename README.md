@@ -92,6 +92,16 @@ task test:aws
 task test:all
 ```
 
+## Vulnerability scanning
+
+CI scans the images with [Trivy](https://trivy.dev) and uploads the HIGH and CRITICAL findings that have a fix
+to the repository's Security tab, with a table in each job summary.
+
+- Every image build scans the base image before any other image is built.
+- On `main`, and on the weekly rebuild, each image's amd64 build is scanned by digest before it is tagged.
+- A CRITICAL vulnerability with a fix available fails the run, so `:latest` stays on the last good image.
+  HIGH findings are reported only.
+
 ## Using the image
 
 The image runs as the `devops` user (home `/home/devops`) with UID/GID 1000, so files in bind mounts

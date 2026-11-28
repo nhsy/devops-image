@@ -52,6 +52,10 @@ jobs:
   verify:
     name: verify base image
     runs-on: ubuntu-latest
+    # security-events: write uploads the Trivy SARIF to code scanning.
+    permissions:
+      contents: read
+      security-events: write
     outputs:
       push: ${{ steps.mode.outputs.push }}
       namespace: ${{ steps.mode.outputs.namespace }}
@@ -110,6 +114,65 @@ jobs:
           # drift onto different tool sets.
           docker run --rm base-image:latest /usr/local/bin/verify-installation.sh
 
+      # Reports HIGH and CRITICAL; only the gate step below fails the build.
+      # Pinned by commit, not tag:
+      # trivy-action's tags were hijacked in March 2026 (GHSA-69fq-xp46-6x23).
+      - name: Scan base image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: base-image:latest
+          version: v0.76.2
+          format: sarif
+          output: trivy-base.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      # Second pass reads the cached DB and binary; it only renders the table.
+      - name: Summarise scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: base-image:latest
+          version: v0.76.2
+          skip-setup-trivy: true
+          format: table
+          output: trivy-base.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Write scan summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '### Trivy: base image (HIGH, CRITICAL, fixable)'
+            echo '```'
+            cat trivy-base.txt
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      # act has no code scanning endpoint.
+      - name: Upload scan to code scanning
+        if: ${{ !github.event.act }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-base.sarif
+          category: trivy-base
+
+      # Last, so the report and upload above happen even when this fails.
+      # Unfixed CVEs are ignored: there is nothing to act on until a fix ships.
+      - name: Fail on fixable critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: base-image:latest
+          version: v0.76.2
+          skip-setup-trivy: true
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
   # One job per image and platform, each on a runner of that architecture, so
   # arm64 builds natively instead of under QEMU and all four run at once. On
   # main each job pushes its single-platform image by digest only; the merge
@@ -122,9 +185,11 @@ jobs:
     # payload with "act": true; on GitHub the field is absent.
     if: ${{ !github.event.act }}
     runs-on: ${{ matrix.runner }}
+    # security-events: write uploads the Trivy SARIF (amd64 legs on main).
     permissions:
       contents: read
       packages: write
+      security-events: write
     strategy:
       matrix:
         image: [gcp, aws]
@@ -185,6 +250,75 @@ jobs:
             type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
             type=gha,scope=base-${{ matrix.arch }}
           cache-to: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }},mode=max
+
+      # Scan the digest just pushed, before the merge job tags it: a failed
+      # gate below fails this job, merge never runs and :latest stays on the
+      # last good image. amd64 only; arm64 carries the same tool versions.
+      # image-src remote reads the layers over the registry API (using the
+      # login above), so nothing is pulled into docker.
+      - name: Scan image
+        if: needs.verify.outputs.push == 'true' && matrix.arch == 'amd64'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_IMAGE_SRC: remote
+        with:
+          image-ref: ${{ needs.verify.outputs.namespace }}/${{ matrix.image }}-devops-image@${{ steps.build.outputs.digest }}
+          version: v0.76.2
+          format: sarif
+          output: trivy.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Summarise scan
+        if: needs.verify.outputs.push == 'true' && matrix.arch == 'amd64'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_IMAGE_SRC: remote
+        with:
+          image-ref: ${{ needs.verify.outputs.namespace }}/${{ matrix.image }}-devops-image@${{ steps.build.outputs.digest }}
+          version: v0.76.2
+          skip-setup-trivy: true
+          format: table
+          output: trivy.txt
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Write scan summary
+        if: needs.verify.outputs.push == 'true' && matrix.arch == 'amd64'
+        shell: bash
+        env:
+          IMAGE: ${{ matrix.image }}-devops-image
+        run: |
+          set -euo pipefail
+          {
+            echo "### Trivy: ${IMAGE} (HIGH, CRITICAL, fixable)"
+            echo '```'
+            cat trivy.txt
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Upload scan to code scanning
+        if: needs.verify.outputs.push == 'true' && matrix.arch == 'amd64'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-${{ matrix.image }}
+
+      - name: Fail on fixable critical vulnerabilities
+        if: needs.verify.outputs.push == 'true' && matrix.arch == 'amd64'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_IMAGE_SRC: remote
+        with:
+          image-ref: ${{ needs.verify.outputs.namespace }}/${{ matrix.image }}-devops-image@${{ steps.build.outputs.digest }}
+          version: v0.76.2
+          skip-setup-trivy: true
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
 
       - name: Export digest
         if: needs.verify.outputs.push == 'true'

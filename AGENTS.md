@@ -36,6 +36,10 @@ image (about 4-5 GB), so it is reserved for major refactors.
   `.dockerignore`, `aqua.yaml`, `scripts/**`, `main.yml` or `.github/actions/**`. The weekly schedule and manual
   runs always build. If the build needs a new input file, add it to both `paths:` lists in `main.yml`.
 - `lint.yml` runs on every push and pull request.
+- `main.yml` scans with Trivy: the base image in `verify`, and on main each amd64 digest in `build`, before
+  `merge` tags it. A fixable CRITICAL fails the run. Pin `aquasecurity/trivy-action` by commit SHA and keep its
+  `version:` explicit (the March 2026 tag hijack, GHSA-69fq-xp46-6x23). To scan locally, scan the published
+  images with `--image-src remote` instead of pulling them.
 - `[skip ci]` (or `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]`) in the head commit message skips
   every workflow for that push or pull request, lint included. Use it only for changes the path filter wouldn't
   already skip and that can't change behaviour, such as a comment-only edit in an image input. Never on commits
