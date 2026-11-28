@@ -21,7 +21,7 @@ tasks:
       # who only wants `task build:gcp` should not be blocked by it.
       - >-
         command -v act >/dev/null && act --version
-        || echo "act not installed (optional - only for task ci:list / ci:local / ci:image)"
+        || echo "act not installed (optional - only for task ci:list / ci:local)"
     silent: true
 
   build:base:
@@ -97,19 +97,16 @@ tasks:
     cmds:
       - act push -W .github/workflows/main.yml -j verify
 
-  ci:image:
-    desc: Run the CI build job under act - builds both targets for amd64, never publishes
-    cmds:
-      # -j still runs the job's `needs`, so this is verify then the
-      # image build. Only the amd64 legs: CI builds arm64 on native arm
-      # runners, which act cannot provide. The workflow hard-disables
-      # publishing whenever ACT is set, so this cannot reach GHCR.
-      - act push -W .github/workflows/main.yml -j build --matrix arch:amd64
-
   lint:
-    desc: Run pre-commit hooks on all files
+    desc: Run pre-commit hooks and lint the GitHub workflows
     cmds:
       - pre-commit run --all-files
+      - task: lint:workflows
+
+  lint:workflows:
+    desc: Lint the GitHub workflows with actionlint (pinned Docker image, ~25 MB)
+    cmds:
+      - docker run --rm -v "$PWD":/repo:ro --workdir /repo rhysd/actionlint:1.7.12 -color
 
   clean:
     desc: Remove built images

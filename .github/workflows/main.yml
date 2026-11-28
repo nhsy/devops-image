@@ -1,10 +1,29 @@
 name: Docker Build and Push
 
+# Pushes and pull requests build only when something that goes into the images,
+# or into building them, changed. An allowlist rather than paths-ignore, so a new
+# docs or tooling file never triggers a ~10 minute build by default. lint.yml
+# runs on every change. The schedule and manual runs have no path filter.
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - aqua.yaml
+      - scripts/**
+      - .github/workflows/main.yml
+      - .github/actions/**
   pull_request:
     branches: [ "main" ]
+    # Same list as push above; keep the two in step.
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - aqua.yaml
+      - scripts/**
+      - .github/workflows/main.yml
+      - .github/actions/**
   workflow_dispatch:
   schedule:
     - cron: '04 04 * * 0'
@@ -98,6 +117,10 @@ jobs:
   build:
     name: build ${{ matrix.image }}-devops (${{ matrix.arch }})
     needs: verify
+    # Never under act: four full image builds don't fit on a dev machine, and
+    # two of them need arm runners act can't provide. .actrc passes an event
+    # payload with "act": true; on GitHub the field is absent.
+    if: ${{ !github.event.act }}
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read

@@ -1,0 +1,43 @@
+# Fast checks for every change, including the docs-only and workflow-only ones
+# that main.yml's path filter skips. Same hooks as `task lint`.
+name: Lint
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Run pre-commit hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pre-commit
+          pre-commit run --all-files --show-diff-on-failure
+
+      - name: Lint workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Pinned to the same version as `task lint:workflows`.
+          docker run --rm -v "$PWD":/repo:ro --workdir /repo rhysd/actionlint:1.7.12 -color
