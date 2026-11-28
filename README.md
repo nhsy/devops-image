@@ -97,9 +97,9 @@ task test:all
 CI scans the images with [Trivy](https://trivy.dev) and uploads the HIGH and CRITICAL findings that have a fix
 to the repository's Security tab, with a table in each job summary.
 
-- Every image build scans the base image before any other image is built.
-- On `main`, and on the weekly rebuild, each image's amd64 build is scanned by digest before it is tagged.
-- A CRITICAL vulnerability with a fix available fails the run, so `:latest` stays on the last good image.
+* Every image build scans the base image before any other image is built.
+* On `main`, and on the weekly rebuild, each image's amd64 build is scanned by digest before it is tagged.
+* A CRITICAL vulnerability with a fix available fails the run, so `:latest` stays on the last good image.
   HIGH findings are reported only.
 
 ## Using the image
@@ -140,7 +140,8 @@ Navigate to your project folder and execute:
 
 The Dockerfile uses the auto populated ARG `TARGETARCH`.
 
-If errors are encountered during `docker build` please check this value is being set to either `amd64` or `arm64` in the build output.
+If errors are encountered during `docker build` please check this value is being set to either `amd64` or
+`arm64` in the build output.
 
 <https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope>
 

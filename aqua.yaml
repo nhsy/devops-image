@@ -13,4 +13,3 @@ packages:
 - name: kubernetes/kubectl@v1.37.3
 - name: terraform-docs/terraform-docs@v0.25.1
 - name: go-task/task@v3.54.0
-

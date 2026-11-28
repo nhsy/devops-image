@@ -5,8 +5,46 @@ repos:
       - id: hadolint-docker
         args: ['--ignore=DL3008', '--ignore=DL3013', '--ignore=DL3059', '--ignore=DL3066']
 
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+  # The shellcheck binary on PATH (Homebrew/apt locally; preinstalled on
+  # GitHub's ubuntu runners, installed by lint.yml where it isn't, e.g. act).
+  - repo: local
     hooks:
       - id: shellcheck
+        name: shellcheck
+        language: system
+        entry: shellcheck
         files: ^scripts/.*\.sh$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      # devcontainer.json is JSONC (comments); the local hook below checks it.
+      - id: check-json
+        exclude: ^\.devcontainer/devcontainer\.json$
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.24.2
+    hooks:
+      - id: markdownlint-cli2
+
+  # Parses devcontainer.json the way the Dev Containers CLI does. The CLI's
+  # parser is lenient and exits 0 on broken JSONC, so require the image to
+  # come through. Skipped with a message when the CLI is missing (e.g. in CI).
+  - repo: local
+    hooks:
+      - id: devcontainer-config
+        name: devcontainer.json parses
+        language: system
+        files: ^\.devcontainer/devcontainer\.json$
+        pass_filenames: false
+        entry: >-
+          bash -c 'if command -v devcontainer >/dev/null; then
+          devcontainer read-configuration --workspace-folder . 2>/dev/null
+          | jq -e ".configuration.image" >/dev/null
+          || { echo "devcontainer.json did not parse (no image)"; exit 1; };
+          else echo "devcontainer CLI not installed; skipped"; fi'
