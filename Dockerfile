@@ -45,33 +45,43 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN --mount=type=cache,target=/root/.cache/pip \
   python3 -m pip install --no-cache-dir --break-system-packages --upgrade pre-commit
 
-# Layer 4: Aqua + tools (changes with aqua.yaml)
+# Layer 4: devops user (changes rarely)
+# ubuntu:24.04 ships user ubuntu at UID/GID 1000; remove it so devops gets 1000
+# and matches the usual host user in bind mounts and devcontainers. Created
+# before aqua so Layer 5 can hand it the aqua root in the same RUN.
+RUN userdel -r ubuntu && \
+  groupadd -g 1000 devops && \
+  useradd -m -u 1000 -g 1000 devops
+
+# Layer 5: Aqua + tools (changes with aqua.yaml)
+# Owned by devops, so aqua can write its cache and timestamps and install a
+# project's own aqua.yaml packages. The chown must stay in this RUN: in a later
+# layer it would copy the whole tree into a new layer.
 COPY aqua.yaml /etc/aqua/aqua.yaml
 RUN curl -sSfL https://raw.githubusercontent.com/aquaproj/aqua-installer/v4.1.2/aqua-installer | bash -s -- -v v2.66.1 && \
   $AQUA_ROOT_DIR/bin/aqua -c /etc/aqua/aqua.yaml i -a && \
+  chown -R devops:devops $AQUA_ROOT_DIR && \
   chmod -R o+rX $AQUA_ROOT_DIR && \
   test -f $AQUA_ROOT_DIR/bin/terraform || (echo "Terraform not found after install!" && ls -R $AQUA_ROOT_DIR && exit 1)
 
-# Scripts are first used by Layer 5, so they are copied here rather than at the
-# top: a script change then rebuilds only Layer 5 onwards, not apt, Node, pip
+# Scripts are first used by Layer 6, so they are copied here rather than at the
+# top: a script change then rebuilds only Layer 6 onwards, not apt, Node, pip
 # and aqua.
 COPY --chmod=755 scripts/*.sh /usr/local/bin/
 
-# Layer 5: Customizations + unit tests
-# ubuntu:24.04 ships user ubuntu at UID/GID 1000; remove it so devops gets 1000
-# and matches the usual host user in bind mounts and devcontainers.
-RUN userdel -r ubuntu && \
-  groupadd -g 1000 devops && \
-  useradd -m -u 1000 -g 1000 devops && \
-  mkdir -p /opt/terraform/plugins-cache && \
+# Layer 6: Customizations + unit tests
+# The plugin cache is owned by devops so terraform init can fill it.
+RUN install -d -o devops -g devops /opt/terraform/plugins-cache && \
   /usr/local/bin/setup-zshrc.sh && \
   /usr/local/bin/setup-bashrc.sh && \
   su - devops -c "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"" && \
   su - devops -c "/usr/local/bin/setup-zshrc.sh" && \
-  /usr/local/bin/verify-installation.sh && \
+  # As devops, so the tool calls in it don't leave root-owned files (aqua's
+  # registry cache) in the aqua root. su resets PATH, so pass the image's.
+  su devops -s /bin/sh -c "PATH=$PATH /usr/local/bin/verify-installation.sh" && \
   /usr/local/bin/cleanup-build.sh
 
-# Layer 6: AI CLI tools
+# Layer 7: AI CLI tools
 RUN --mount=type=cache,target=/root/.npm \
   npm install -g \
     @anthropic-ai/claude-code@latest \
