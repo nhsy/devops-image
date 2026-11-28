@@ -21,7 +21,8 @@ then fails with `no space left on device` part way through.
 This overrides the global rule to run `task test:ci` before every commit proposal: in this repo it builds the base
 image (about 4-5 GB), so it is reserved for major refactors.
 
-- Default: `task lint` (pre-commit hooks plus actionlint). No image builds.
+- Default: `task lint` (pre-commit hooks plus actionlint). No image builds. It needs `shellcheck` on PATH, and
+  checks `.devcontainer/devcontainer.json` only when the `devcontainer` CLI is installed.
 - Also build and test the base image (`task test:ci`, then `task ci:local` if workflows changed) only after a
   major refactor:
   - restructuring the Dockerfile: moving, merging or splitting layers or stages, or changing the base image;

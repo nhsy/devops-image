@@ -28,6 +28,18 @@ jobs:
         with:
           python-version: '3.12'
 
+      # The shellcheck hook calls the system binary. GitHub's ubuntu runners
+      # ship it; act's runner image doesn't.
+      - name: Ensure shellcheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v shellcheck >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends shellcheck
+          fi
+          shellcheck --version
+
       - name: Run pre-commit hooks
         shell: bash
         run: |

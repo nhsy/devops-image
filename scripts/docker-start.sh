@@ -16,4 +16,3 @@ docker run -ti --rm \
     -w /work \
     --name "$NAME" \
     gcp-devops
-
