@@ -13,11 +13,14 @@ ENV AQUA_GLOBAL_CONFIG=/etc/aqua/aqua.yaml
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Layer 1: APT packages (changes rarely)
+# upgrade picks up security fixes published after the ubuntu image was cut;
+# the weekly no-cache build re-runs it.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
   set -x && \
   echo TARGETARCH: ${TARGETARCH} && \
   apt-get update && \
+  apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
   curl \
   git \
